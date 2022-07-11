@@ -26,6 +26,9 @@ namespace Perrinn424.AutopilotSystem
         [Header("Setup")]
 
         public InputType inputType;
+
+        [SerializeField]
+        private bool autoStart = false;
         
         [SerializeField]
         private AutopilotStartup startup;
@@ -43,6 +46,12 @@ namespace Perrinn424.AutopilotSystem
         private AutopilotDebugDrawer debugDrawer;
         private IPIDInfo PIDInfo => lateralCorrector;
 
+        public Sample ReferenceSample { get; private set; }
+        public float ReferenceSpeed { get; private set; }
+        public float PlayingTime { get; private set; }
+        //TODO use this value at dashboard
+        public float DeltaTime { get; private set; }
+
         public override void OnEnableVehicle()
         {
             autopilotSearcher = new AutopilotSearcher(this, recordedLap);
@@ -53,6 +62,12 @@ namespace Perrinn424.AutopilotSystem
             pathDrawer.recordedLap = recordedLap;
 
             vehicle.onBeforeUpdateBlocks += UpdateAutopilot;
+            UpdateAutopilot();
+
+            if (autoStart)
+            {
+                SetStatus(true);
+            }
         }
 
         public override void OnDisableVehicle()
@@ -63,6 +78,10 @@ namespace Perrinn424.AutopilotSystem
         public void UpdateAutopilot()
         {
             autopilotSearcher.Search(vehicle.transform);
+            ReferenceSample = GetInterpolatedNearestSample();
+            ReferenceSpeed = CalculateReferenceSpeed(autopilotSearcher.Segment);
+            PlayingTime = CalculatePlayingTime();
+            DeltaTime = timer.currentLapTime - PlayingTime;
             pathDrawer.index = autopilotSearcher.StartIndex;
 
             if (IsOn)
@@ -73,9 +92,8 @@ namespace Perrinn424.AutopilotSystem
 
         private void UpdateAutopilotInOnStatus()
         {
-            float expectedSpeed = CalculateExpectedSpeed(autopilotSearcher.Segment);
-            startup.IsStartup(expectedSpeed);
-            Sample runningSample = GetInterpolatedNearestSample();
+            startup.IsStartup(ReferenceSpeed);
+            Sample runningSample = ReferenceSample;
             Vector3 targetPosition = autopilotSearcher.ProjectedPosition;
 
             float yawError = RotationCorrector.YawError(vehicle.transform.rotation, runningSample.rotation);
@@ -95,7 +113,7 @@ namespace Perrinn424.AutopilotSystem
             {
                 lateralCorrector.Correct(targetPosition);
                 float currentTime = timer.currentLapTime;
-                timeCorrector.Correct(PlayingTime(), currentTime);
+                timeCorrector.Correct(CalculatePlayingTime(), currentTime);
             }
 
             debugDrawer.Set(targetPosition, lateralCorrector.ApplicationPosition, lateralCorrector.Force);
@@ -103,7 +121,8 @@ namespace Perrinn424.AutopilotSystem
 
         }
 
-        public override float PlayingTime()
+        //TODO make private and use Property PlayingTime
+        public override float CalculatePlayingTime()
         {
             float sampleIndex = (autopilotSearcher.StartIndex + autopilotSearcher.Ratio);
             float playingTimeBySampleIndex = sampleIndex / recordedLap.frequency;
@@ -120,6 +139,10 @@ namespace Perrinn424.AutopilotSystem
                     Debug.LogWarning("Autopilot can't operate from these conditions");
                     return;
                 }
+            }
+            else
+            {
+                vehicle.data.Set(Channel.Custom, Perrinn424Data.EnableProcessedInput, 0);
             }
 
             base.SetStatus(isOn);
@@ -163,6 +186,7 @@ namespace Perrinn424.AutopilotSystem
             else
             {
                 vehicle.data.Set(Channel.Custom, Perrinn424Data.EnableProcessedInput, 1);
+                vehicle.data.Set(Channel.Custom, Perrinn424Data.InputDrsPosition, (int)(s.drsPosition*10.0f));
                 vehicle.data.Set(Channel.Custom, Perrinn424Data.InputSteerAngle, (int)(s.steeringAngle * 10000.0f));
                 vehicle.data.Set(Channel.Custom, Perrinn424Data.InputMguThrottle, (int)(s.throttle * 100.0f));
                 vehicle.data.Set(Channel.Custom, Perrinn424Data.InputBrakePressure, (int)(s.brakePressure * 10000.0f));
@@ -175,8 +199,9 @@ namespace Perrinn424.AutopilotSystem
             return recordedLap.lapTime;
         }
 
-        private float CalculateExpectedSpeed(Vector3 segment)
+        private float CalculateReferenceSpeed(Vector3 segment)
         {
+            //TODO add speed to recorded lap
             return segment.magnitude * recordedLap.frequency;
         }
 
