@@ -3,17 +3,17 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy import interpolate
 
-def loadTrackData(track_files, autopilot_data_filename):
+def loadTrackData(track_files):
 
     nums = [str(i) for i in range(track_files[0], track_files[1])]
 
-    segments = [np.genfromtxt("ROAD_GR"+n+".csv", dtype=None, delimiter=',') for n in nums]
+    segments = [np.genfromtxt("roadOutlines\\ROAD_GR"+n+".csv", dtype=None, delimiter=',') for n in nums]
     track = np.concatenate(segments, dtype=float)
     track, counts = np.unique(track, axis=0, return_counts=True)
 
-    return track[counts<=4], None
+    return track[counts<=4]
 
-def findTrackLimits(track, track_name):
+def findTrackLimits(track):
     
     sideR = [2,1]; sideL = [40,42]
     sides = []
@@ -34,7 +34,7 @@ def findTrackLimits(track, track_name):
 
     return sides
 
-def find_next_point(track, side, previous):
+def find_next_point(track, side, previous, n=15):
     # find next point in track limits
 
     prev = previous[-1]
@@ -44,7 +44,6 @@ def find_next_point(track, side, previous):
 
     foundFirst = False
 
-    n = 20
     dists[previous[1:]] = np.inf
     poss_points = np.argsort(dists)[1:1+n]
 
@@ -78,72 +77,72 @@ def find_next_point(track, side, previous):
 
     angle[parr<0] = -np.inf
 
-    next_cand = np.argmax(angle)
+    angle[np.abs(angle)>np.pi/4] = -np.inf
 
-    ## find close neighbours
-
-    # parr[angle < angle[next_cand] - 0.01] = np.inf
-    # parr[parr < 0] = np.inf
-
-    # next_cand = np.argmin(parr)
-
-    # sns.set_theme()
-
-    # fig = plt.figure()
-    # ax = plt.axes()
-
-    # ax.scatter(*track[poss_points].T, color = 'blue')
-    # ax.scatter(*track[poss_points[next_cand]].T, color = 'green')
-    # vector_parr = track[prev] + [del_x, del_y]
-    # vector_perp = track[prev] + [-del_y, del_x]
-
-    # ax.plot([track[prev,0], vector_parr[0]], [track[prev,1], vector_parr[1]], color='orange', label = 'parallel')
-    # ax.plot([track[prev,0], vector_perp[0]], [track[prev,1], vector_perp[1]], color='red', label = 'perpendicular')
-
-    # plt.title("Nordschleife")
-    # plt.tight_layout()
-    # plt.xlabel("X (m)")
-    # plt.ylabel("Y (m)")
-    # plt.legend()
-    # plt.show()
-    
-    # temp = track[poss_points]
-
-    if foundFirst and parr[first_ind] > 0 and parr[first_ind] != np.inf:
-        return first
+    if np.size(angle[angle > -1e3]) < 5:
+        return find_next_point(track, side, previous, int((n+1)*1.05))
     else:
-        return poss_points[next_cand]
+        next_cand = np.argmax(angle)
 
-def plotTrack(*args):
+        if foundFirst and parr[first_ind] > 0 and parr[first_ind] != np.inf:
+            return first
+        else:
+            return poss_points[next_cand]
+
+def plotTrack(sides, auto, corners, mesh, mesh_sides):
 
     sns.set_theme()
 
     fig = plt.figure()
     ax = plt.axes()
+
+    ax.plot(sides[:,0], sides[:,1], color = "black")
+    ax.plot(sides[:,2], sides[:,3], color = "black", label = "Interp Sides")
+
+    ax.scatter(*mesh[:,[0,2]].T, c="pink", s=4e-1, label = "Original Mesh")
+
+    ax.scatter(*mesh[mesh_sides[0]][:,[0,2]].T, c="purple", s=8e-1, label = "Original Sides")
+    ax.scatter(*mesh[mesh_sides[1]][:,[0,2]].T, c="purple", s=8e-1)
+
+    for sideL in mesh_sides[0]:
+        if mesh[sideL,0] > -750 and mesh[sideL,0] < -700 and mesh[sideL,2] > 2160 and mesh[sideL,2] < 2260:
+            ax.text(*mesh[sideL][[0,2]].T,str(sideL))
     
-    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']
+    for sideR in mesh_sides[1]:
+        if mesh[sideR,0] > -750 and mesh[sideR,0] < -700 and mesh[sideR,2] > 2160 and mesh[sideR,2] < 2260:
+            ax.text(*mesh[sideR][[0,2]].T,str(sideR))
 
-    for i, arg in enumerate(args):
+    prev_end = 0
+    for i, (start, end) in enumerate(corners):
 
-        ax.scatter(arg[:,0], arg[:,2], color = colors[i % len(colors)])
+        if i == 0:
+                
+            ax.plot(auto[prev_end:start,0], auto[prev_end:start,1], "b--", label="Straights")
+            ax.plot(auto[start:end,0], auto[start:end,1], "g--", label = "Corners")
+            prev_end = end
+        else:
+            ax.plot(auto[prev_end:start,0], auto[prev_end:start,1], "b--")
+            ax.plot(auto[start:end,0], auto[start:end,1], "g--")
+            prev_end = end
 
-    plt.title("Nordschleife")
-    plt.tight_layout()
+    plt.title("Nordschleife - Corner Splitting")
+    # plt.tight_layout()
     plt.xlabel("X (m)")
     plt.ylabel("Y (m)")
+    plt.legend()
 
     plt.show()
 
 def saveTrack(sides, track_name):
 
-    with open(track_name+"_sides.txt", 'w') as sideFile:
+    with open("trackData\\"+track_name+"_sides.txt", 'w') as sideFile:
 
         sideFile.write(','.join([str(x) for x in sides[0]])+'\n' + ','.join([str(x) for x in sides[1]]))
         sideFile.close()
 
 def loadTrack(track_name):
 
-    with open(track_name+"_sides.txt", 'r') as sideFile:
+    with open("trackData\\"+track_name+"_sides.txt", 'r') as sideFile:
         
         sides = sideFile.read().split('\n')
 
@@ -154,63 +153,114 @@ def loadTrack(track_name):
 def spline_curvature(tck):
     
     u = np.linspace(0, 1, int(1e5))
-    midp = interpolate.splev(u, tck)
+    xy = interpolate.splev(u, tck, der=0)
     dx, dy = interpolate.splev(u, tck, der=1)
     ddx, ddy = interpolate.splev(u, tck, der=2)
-    K = abs(dx * ddy - dy * ddx) / ((dx ** 2 + dy ** 2) ** (3 / 2))
+    K = (dx * ddy - dy * ddx) / ((dx ** 2 + dy ** 2) ** (3 / 2))
 
-    return K, np.array(midp)
+    return np.array(xy), K
 
 def interpolateTrack(track, sides):
 
     track_vertices = track[:, [0,2]]
 
+    #find closest point
     first = sides[0][0]
-
     dists = np.sum(np.square(track_vertices[sides[1]] - track_vertices[first]), axis=1)
-
     closest = np.argmin(dists)
 
+    #reset the loop
     sides[1] = sides[1][:-1]
     sides[1] = sides[1][closest:] + sides[1][:closest] + [sides[1][closest]]
 
-    tck_L, disc = interpolate.splprep(track_vertices[sides[0]].T)
-    tck_R, disc = interpolate.splprep(track_vertices[sides[1]].T)
+    tck_L, disc = interpolate.splprep(track_vertices[sides[0]].T, s=1e1)
+    tck_R, disc = interpolate.splprep(track_vertices[sides[1]].T, s=1e1)
 
-    new_u = np.linspace(0,1,int(1e5))
+    sideL, curv_L = spline_curvature(tck_L)
+    sideR, curv_R = spline_curvature(tck_R)
 
-    sideL = interpolate.splev(new_u, tck_L) 
-    sideR = interpolate.splev(new_u, tck_R)
+    return np.array(sideL), np.array(sideR), curv_L, curv_R
 
-    return np.array(sideL), np.array(sideR)
+def interpolateAutopilot(autopilot_data):
 
+    tck_auto, u_points = interpolate.splprep(autopilot_data[:,[10,12]].T, w=autopilot_data[:,20])
+    path_auto, curv_auto = spline_curvature(tck_auto)
+
+    auto_data = np.zeros((int(1e5),3))
+
+    auto_data[:,:2] = path_auto.T
+    auto_data[:,2] = curv_auto
+
+    return auto_data, u_points
 
 def main():
 
     track_name = "nordschleife"
-    track, autopilot = loadTrackData((2,9), track_name + " unfinished.csv")
+    track = loadTrackData((2,9))
 
-    sides = findTrackLimits(track, track_name)
-
+    sides = findTrackLimits(track)
     saveTrack(sides, track_name)
+    
     sides = loadTrack(track_name)
 
-    sideL, sideR = interpolateTrack(track, sides)
+    sideL, sideR, curv_L, curv_R = interpolateTrack(track, sides)
 
-    midpoints = (sideL + sideR) / 2
-
-    tck_mid, disc = interpolate.splprep(midpoints)
-
-    curv, midp = spline_curvature(tck_mid)
-
-    all_data = np.zeros((int(1e5),7))
+    all_data = np.zeros((int(1e5),6))
 
     all_data[:,:2] = sideL.T
     all_data[:,2:4] = sideR.T
-    all_data[:,4:6] = midp.T
-    all_data[:,6] = curv
+    all_data[:,4] = curv_L
+    all_data[:,5] = curv_R
 
-    np.savetxt(track_name+"_trackData.csv", all_data, delimiter=',', newline='\n')
+    np.savetxt("trackData\\"+track_name+"_trackData.csv", all_data, delimiter=',', newline='\n')
+
+def find_corners(auto_data, threshold=3e-3):
+
+    auto_corners = (np.abs(auto_data[:,2]) > threshold).astype(int)
+
+    mask = np.ediff1d(auto_corners)
+
+    auto_corners[auto_corners == 0] = -1
+
+    start = np.where((mask>0))[0] #  | ((auto_corners[1:] != -1) & (mask_change!=0))
+    end = np.where((mask<0))[0] # | ((auto_corners[1:] == -1) & (mask_change!=0))
+
+    if auto_corners[0] == 1:
+        start = np.concatenate((np.array([0]), start))
+    if auto_corners[-1] == 1:
+        end = np.concatenate((end, np.array([-1])))
+
+    return np.column_stack((start, end))
+
+def processAutopilot(file_name, track_name):
+
+    autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
+
+    autopilot_data[:,10] *= -1
+
+    autopilot_data, u_original = interpolateAutopilot(autopilot_data)
+
+    corner_data = find_corners(autopilot_data)
+
+    np.savetxt("trackData\\"+track_name + "_autopilot_originalU.csv",u_original, delimiter=',', newline='\n')
+    np.savetxt("trackData\\"+track_name + "_autopilot_cornerPoints.csv",corner_data, delimiter=',', newline='\n')
+    np.savetxt("trackData\\"+track_name + "_autopilot_interpolated.csv",autopilot_data, delimiter=',', newline='\n')
 
 if __name__ == "__main__":
     main()
+
+    #x_dim*=-1
+
+    processAutopilot("C:\\Users\\lachl\\OneDrive\\Documents\\Coding\\project-424-unity\\Telemetry\\2022-07-11 04.06.25 UTC 05.08.342.csv","nordschleife")
+
+    all_data = np.genfromtxt("trackData\\"+"nordschleife"+"_trackData.csv", delimiter=',', dtype=float)
+    autopilot_data = np.genfromtxt("trackData\\"+"nordschleife" + "_autopilot_interpolated.csv", delimiter=',', dtype=float)
+    corner_data = np.genfromtxt("trackData\\"+"nordschleife" + "_autopilot_cornerPoints.csv",delimiter=',', dtype=int)
+
+    sides = loadTrack("nordschleife")
+
+    track = loadTrackData((2,9))
+
+    plotTrack(all_data, autopilot_data, corner_data, track, sides)
+
+    pass
