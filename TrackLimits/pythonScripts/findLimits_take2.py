@@ -1,3 +1,4 @@
+from cmath import atan
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -212,12 +213,22 @@ def spline_curvature(tck, u, side = True):
     ddx, ddy = interpolate.splev(u, tck, der=2)
     k = (dx * ddy - dy * ddx) / ((dx ** 2 + dy ** 2) ** (3 / 2))
 
-    mag = np.sqrt(dx**2 + dy**2)
+    psi = np.zeros(u.shape)
+
+    mask_q1 = (dx>=0) & (dy>=0)
+    mask_q2 = (dx<0) & (dy>=0)
+    mask_q3 = (dx<0) & (dy<0)
+    mask_q4 = (dx>=0) & (dy<0)
+
+    psi[mask_q1] = np.arctan(dy[mask_q1]/dx[mask_q1])
+    psi[mask_q2] = np.arctan(dy[mask_q2]/dx[mask_q2]) + np.pi
+    psi[mask_q3] = np.arctan(dy[mask_q3]/dx[mask_q3]) + np.pi
+    psi[mask_q4] = np.arctan(dy[mask_q4]/dx[mask_q4]) + np.pi*2
 
     if side:
-        return np.array([u,x,y,dx/mag,dy/mag])
+        return np.array([u,x,y,psi])
     else:
-        return np.array([u,x,y,k,dx,dy,u])
+        return np.array([u,x,y,k,psi,u])
 
 def interpolateTrack(track, sides):
     """_summary_
@@ -318,7 +329,7 @@ def processAutopilot(file_name, track_name):
 
     auto_data[-1] = find_corners(auto_data[3])
 
-    np.savetxt("trackData\\autopilot"+track_name + "_autopilot_interpolated.csv",auto_data.T, delimiter=',', newline='\n', fmt="%.5f")
+    np.savetxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv",auto_data.T, delimiter=',', newline='\n', fmt="%.5f")
 
 def AutopilotSine(auto_data, m=0.5, sigma=5e2):
     """_summary_
@@ -331,25 +342,21 @@ def AutopilotSine(auto_data, m=0.5, sigma=5e2):
     Returns:
         _type_: _description_
     """
-    perp_vector = [auto_data[5], auto_data[4]]
 
-    old_coord = auto_data[1:3]
-
-    temp = m * np.sin(2*np.pi*auto_data[0]*sigma)
-    new_coord = old_coord + temp * perp_vector
-
-    b_vector = new_coord[:,1:] - new_coord[:,:-1]
+    b_vector = auto_data[1:3,1:] - auto_data[1:3,:-1]
 
     steering_angle = np.zeros(auto_data.shape[1])
 
-    for i, (p_vec, b_temp) in enumerate(zip(perp_vector.T,b_vector.T)):
+    for i in range(1,auto_data.shape[1]):
 
-        a = np.array([p_vec[::-1], p_vec])
-        parr, perp = np.linalg.solve(a, b_temp)
+        grad = b_vector[:,i-1]
+        a = np.array([grad, grad[::-1]])
+
+        parr, perp = np.linalg.solve(a, b_vector[:,i])
 
         steering_angle[i] = np.arctan(perp/parr) * (180/np.pi)
 
-    return new_coord, steering_angle
+    return steering_angle
 
 if __name__ == "__main__":
     """_summary_

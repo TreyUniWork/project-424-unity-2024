@@ -1,8 +1,0 @@
-import bpy
-num = "8"
-outputFile = "C:\\Users\\lachl\\OneDrive\\Documents\\Coding\\project-424-unity\\Assets\\Locations\\Nordschleife\\TrackLimits"
-verts = [[str(co) for co in v.co] for v in bpy.context.object.data.vertices]
-csvLines = [','.join([v for v in co]) + '\n' for co in verts]
-f = open(outputFile+"//ROAD_GR" + num + ".csv", 'w')
-f.writelines(csvLines)
-f.close()

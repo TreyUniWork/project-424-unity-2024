@@ -11245,7 +11245,7 @@ PrefabInstance:
         type: 3}
       propertyPath: recordedLap
       value: 
-      objectReference: {fileID: 11400000, guid: 3122c5adbda23734a92e08154dd702ce,
+      objectReference: {fileID: 11400000, guid: f0003f78770e2fd4c9056c87756ea30a,
         type: 2}
     - target: {fileID: 6920350783621389725, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
         type: 3}
