@@ -225,8 +225,10 @@ def spline_curvature(tck, u, side = True):
     psi[mask_q3] = np.arctan(dy[mask_q3]/dx[mask_q3]) + np.pi
     psi[mask_q4] = np.arctan(dy[mask_q4]/dx[mask_q4]) + np.pi*2
 
+    mag = np.sqrt(dx**2+dy**2)
+
     if side:
-        return np.array([u,x,y,psi])
+        return np.array([u,x,y,psi, dx/mag, dy/mag])
     else:
         return np.array([u,x,y,k,psi,u])
 
@@ -345,14 +347,14 @@ def AutopilotSine(auto_data, m=0.5, sigma=5e2):
 
     b_vector = auto_data[1:3,1:] - auto_data[1:3,:-1]
 
+    perp_vector = auto_data[[6,5]]
+
     steering_angle = np.zeros(auto_data.shape[1])
 
-    for i in range(1,auto_data.shape[1]):
+    for i, (p_vec, b_temp) in enumerate(zip(perp_vector.T,b_vector.T)):
 
-        grad = b_vector[:,i-1]
-        a = np.array([grad, grad[::-1]])
-
-        parr, perp = np.linalg.solve(a, b_vector[:,i])
+        a = np.array([p_vec[::-1], p_vec])
+        parr, perp = np.linalg.solve(a, b_temp)
 
         steering_angle[i] = np.arctan(perp/parr) * (180/np.pi)
 

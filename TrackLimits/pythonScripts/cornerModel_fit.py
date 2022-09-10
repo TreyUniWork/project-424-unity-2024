@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import differential_evolution
+from scipy.optimize import differential_evolution, minimize_scalar
 from matplotlib import pyplot as plt
 import seaborn as sns
 
@@ -31,8 +31,6 @@ def corner_diff(consts, corner_data, returnMse = False):
 
     u = (corner_data[0] - u0) / u_range
 
-    corner_dist = u_range * 74559.27 / 3.5
-
     psi0 = corner_data[4,0]
     psi_1 = corner_data[4,-1]
 
@@ -46,6 +44,14 @@ def corner_diff(consts, corner_data, returnMse = False):
 
     l0 = 1/(1+c1+ca)
 
+    u_segments = np.array([0, l0, l0 * (1+ca), 1]) # replace closest point in u
+
+    u_indices = np.searchsorted(u, u_segments, side="right")
+    u[u_indices] = u_segments
+
+    #pick corner distance to minimise end point separation
+    corner_dist = u_range * (74559.27 / 3.6) * 10 ** (0)    # c = 0 (std)
+
     ka = ((2*del_psi/(l0 * corner_dist)) - (k0 + c1*k1)) / (1 + c1 + 2*ca)
 
     k = calc_curvature(u, ka, k0, k1, l0, c1)
@@ -57,13 +63,13 @@ def corner_diff(consts, corner_data, returnMse = False):
 
     else:
 
-        psi, psi_consts = calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, psi_1, corner_dist)
+        psi = calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, psi_1, corner_dist)
 
-        x, y = calc_position(u, k, psi, ka, k0, k1, l0, ca, c1, x_data[0], y_data[0], x_data[-1], y_data[-1], corner_dist, psi0, *psi_consts)
+        x, y = calc_position(u, k, psi, x_data[0], y_data[0], x_data[-1], y_data[-1])
 
-        return np.array([corner_data[0], x, y, k, psi, corner_data[-1]])
+        return np.array([corner_data[0], x, y, k, psi, corner_data[-1]]), u_indices
 
-def calc_steering_angle(auto_data):
+def calc_steering_angle(beta, k):
     """_summary_
 
     Args:
@@ -73,22 +79,10 @@ def calc_steering_angle(auto_data):
     Returns:
         _type_: _description_
     """
-    parr_vector = np.array([np.tan(auto_data[4]),np.zeros(auto_data.shape[1])+1])
 
-    old_coord = auto_data[1:3]
+    theta = beta[0] + beta[1] * k
 
-    b_vector = old_coord[:,1:] - old_coord[:,:-1]
-
-    steering_angle = np.zeros(auto_data.shape[1])
-
-    for i, (p_vec, b_temp) in enumerate(zip(parr_vector.T,b_vector.T)):
-
-        a = np.array([p_vec, p_vec[::-1]])
-        perp, parr = np.linalg.solve(a, b_temp)
-
-        steering_angle[i] = np.arctan(perp/parr) * (180/np.pi)
-
-    return steering_angle
+    return theta
 
 def calc_curvature(u, ka, k0, k1, l0, c1):
     """_summary_
@@ -146,8 +140,6 @@ def calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, psi_1, corner_dist):
     psi2 = psi1 + ka * l0 * corner_dist * ca
     psi3 = psi2 + (ka+k1) * l0* corner_dist * c1 / 2
 
-    assert abs(psi3-psi_1) < 1e-1
-
     psi[clothoid0_mask] = psi0 + (k[clothoid0_mask]+k0) * u[clothoid0_mask] * corner_dist/2
 
     #TODO
@@ -158,7 +150,7 @@ def calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, psi_1, corner_dist):
 
     return psi, (psi1, psi2, psi3)
 
-def calc_position(u, k, psi, ka, k0, k1, l0, ca, c1, x0, y0, x_1, y_1, corner_dist, psi0, psi1, psi2, psi3):
+def calc_position(u, k, psi, x0, y0, x_1, y_1):
     """_summary_
 
     Args:
@@ -189,10 +181,14 @@ def calc_position(u, k, psi, ka, k0, k1, l0, ca, c1, x0, y0, x_1, y_1, corner_di
     x[0] = x0
     y[0] = y0
 
-    for i in range(1, u.shape[0]):
+    x[1:] = 1/k[1:] * (np.sin(psi[1:]) - np.sin(psi[:-1]))
+    y[1:] = 1/k[1:] * (np.cos(psi[:-1]) - np.cos(psi[1:]))
 
-        x[i] = x[i-1] + 1/k[i] * (np.sin(psi[i]) - np.sin(psi[i-1]))
-        y[i] = y[i-1] + 1/k[i] * (np.cos(psi[i-1]) - np.cos(psi[i]))
+    dx_t = (1/np.mean(k)) * (np.sin(psi[-1])- np.sin(psi[0]))
+    dy_t = (1/np.mean(k)) * (np.cos(psi[0])- np.cos(psi[-1]))
+
+    x = x.cumsum()
+    y = y.cumsum()
 
     return x, y
 
@@ -218,7 +214,7 @@ def fit_corner_model(auto_data):
 
     return consts
 
-def produce_path(file_name, track_name, consts, auto_data, plot = False):
+def produce_path(file_name, track_name, consts, auto_data, plot = True):
     """_summary_
 
     Args:
@@ -227,13 +223,19 @@ def produce_path(file_name, track_name, consts, auto_data, plot = False):
         consts (_type_): _description_
         auto_data (_type_): _description_
     """
+    c_inds = []
     autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
+
+    beta = steeringAngle_fit(autopilot_data[:,16], auto_data[3])
 
     for i, cnt in enumerate(consts):
 
         corner_mask = (auto_data[-1] == i)
+        st_ind = np.argwhere(corner_mask)[0]
         temp_data = auto_data[:,corner_mask]
-        new_data = corner_diff(cnt, temp_data,False)
+        new_data, corner_inds = corner_diff(cnt, temp_data,False)
+
+        c_inds.append(corner_inds+st_ind)
 
         if plot:
             plot_corner(new_data, temp_data, i, track_name)
@@ -248,9 +250,23 @@ def produce_path(file_name, track_name, consts, auto_data, plot = False):
     autopilot_data[:,10] = auto_data[1]
     autopilot_data[:,12] = auto_data[2]
 
-    autopilot_data[:,16] = calc_steering_angle(auto_data)
+    autopilot_data[:,16] = calc_steering_angle(beta, auto_data[3])
+
+
+    np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerIndices.csv", np.array(c_inds), delimiter=',', newline='\n', header=header, fmt="%.5f")
 
     np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerModel_original.csv", autopilot_data, delimiter=',', newline='\n', header=header, fmt="%.5f")
+
+def steeringAngle_fit(y, x):
+
+    y_diff = y - np.mean(y)
+    x_diff = x - np.mean(x)
+
+    b1 = np.sum(x_diff*y_diff)/np.sum(x_diff**2)
+
+    b0 = np.mean(y) - b1 * np.mean(x)
+
+    return b0, b1
 
 
 def plot_corner(corner_data, original_data, num, track_name):
@@ -311,7 +327,7 @@ def main(track_name):
     """
     auto = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float).T
 
-    # consts = fit_corner_model(auto)
+    #consts = fit_corner_model(auto)
 
     consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
 
