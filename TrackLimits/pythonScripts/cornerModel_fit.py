@@ -229,7 +229,7 @@ def fit_corner_model(auto_data):
 
     return consts
 
-def produce_path(autopilot_data,consts, auto_data):
+def produce_path(autopilot_data, consts, auto_data):
     """_summary_
 
     Args:
