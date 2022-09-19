@@ -413,11 +413,11 @@ def main(track_name):
         track_name (_type_): _description_
     """
 
-    file_name = "trackData\\testPaths\\2022-07-11 04.07.43 UTC 05.08.327 ideal.csv"
+    file_name = "TrackLimits\\trackData\\testPaths\\initial_path.csv"
     autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
     auto = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float).T
 
-    #consts = fit_corner_model(auto)
+    consts = fit_corner_model(auto)
 
     consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
 
@@ -428,7 +428,7 @@ def main(track_name):
         header = '\n'.join(header[:2])
 
     np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerIndices.csv", np.array(c_inds, dtype=int), delimiter=',', newline='\n', fmt="%d")
-    np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerModel_original.csv", autopilot_data, delimiter=',', newline='\n', header=header, fmt="%.5f")
+    np.savetxt("trackData\\testPaths\\"+track_name + "test.csv", autopilot_data, delimiter=',', newline='\n', header=header, fmt="%.5f")
     np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_autodata.csv", auto_data, delimiter=',', newline='\n', fmt="%.5f")
 
 if __name__ == "__main__":

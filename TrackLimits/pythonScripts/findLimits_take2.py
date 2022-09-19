@@ -366,9 +366,9 @@ if __name__ == "__main__":
 
     track_name = "nordschleife"
 
-    processAutopilot("trackData\\testPaths\\2022-07-11 04.07.43 UTC 05.08.327 ideal.csv",track_name)
+    processAutopilot("TrackLimits\\trackData\\testPaths\\initial_path.csv",track_name)
 
     #auto = np.genfromtxt("trackData\\autopilot"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float)
     # sideL = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataL.csv", delimiter=',', dtype=float)
-    # sideR = np.genfromtxt("trackData\\track_sides"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
+    # sideR = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
     # test_path = np.genfromtxt("trackData\\testPaths\\"+track_name + "_autopilot_xyChange_wavy.csv", delimiter=',',skip_header=2, dtype=float)
