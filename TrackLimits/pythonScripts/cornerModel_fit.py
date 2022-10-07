@@ -1,13 +1,14 @@
 import numpy as np
-from scipy.optimize import differential_evolution, minimize_scalar
-from matplotlib import pyplot as plt
-import seaborn as sns
+from scipy.optimize import minimize_scalar, dual_annealing
+from plotTrack import plot_autopilot, plot_corner
+from findLimits_take2 import check_inside
+from acceleration_model import find_inputs
 
-def corner_diff_wrapper(c, consts, corner_data, mode = "1"):
+def corner_diff_wrapper(c, consts, corner_data, sides):
 
-    return corner_diff(consts, corner_data, c, mode)
+    return corner_diff(consts, corner_data, c, "1", sides)
 
-def corner_diff(consts, corner_data, c = None, mode = "0"):
+def corner_diff(consts, corner_data, c, mode, sides):
     """_summary_
 
     Args:
@@ -21,7 +22,7 @@ def corner_diff(consts, corner_data, c = None, mode = "0"):
     """
 
     if mode != "1":
-        c = minimize_scalar(fun=corner_diff_wrapper, method="brent", bracket=(-0.1,0.1), args = (consts, corner_data, "1")).x
+        c = minimize_scalar(fun=corner_diff_wrapper, method="bounded", bounds=(-0.5,0.5), args = (consts, corner_data, sides)).x
 
     k0 = corner_data[3,0]
     k1 = corner_data[3,-1]
@@ -62,42 +63,44 @@ def corner_diff(consts, corner_data, c = None, mode = "0"):
     ka = ((2*del_psi/(l0 * corner_dist)) - (k0 + c1*k1)) / (1 + c1 + 2*ca)
     k = calc_curvature(u, ka, k0, k1, l0, c1)
 
-    if mode == "0":
+    psi = calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, corner_dist)
+    x, y = calc_position(u, k, psi, x_data[0], y_data[0])
 
+    if mode == "0":
         mse = np.sum(np.sqrt((k-corner_data[3])**2)) / u.size
-        return mse
+        isInside = check_inside(np.array([x,y]),sides)
+        return mse*(1+(1-isInside))
 
     else:
-            
-        psi = calc_heading(u, k, ka, k0, k1, l0, ca, c1, psi0, corner_dist)
-        x, y = calc_position(u, k, psi, x_data[0], y_data[0])
+
+        ## perpindicular distance
+        delta = [x[-1]-x_data[-1], y[-1] - y_data[-1]]
+
+        psi_end = psi[-1] % (2*np.pi)
+        y_dir = np.tan(psi_end)
+
+        vec = np.array([1, y_dir])    # + +
+        mag = np.sqrt(1+y_dir**2)
+        vec /= mag
+
+        if psi_end > np.pi/2 and psi_end < np.pi*3/2:
+            vec *= -1
+
+        a = np.zeros((2,2))
+        a[0] = vec
+        a[1] = vec[::-1]
+
+        parr, perp = np.linalg.solve(a, delta)
 
         if mode == "1":
-
-            ## perpindicular distance
-
-            delta = [x[-1]-x_data[-1], y[-1] - y_data[-1]]
-
-            psi_end = psi[-1]
-            y = np.tan(psi_end)
-
-            vec = np.array([1, y])    # + +
-            mag = np.sqrt(1+y**2)
-            vec /= mag
-
-            if psi_end > np.pi/2 and psi_end < np.pi*3/2:
-                vec *= -1
-
-            a = np.zeros((2,2))
-            a[0] = vec
-            a[1] = vec[::-1]
-
-            parr, perp = np.linalg.solve(a, delta)
-
-            return perp
-
+            return np.abs(perp)
         else:
+            isInside = check_inside(np.array([x,y]),sides)
+            #if isInside:
             return np.array([corner_data[0], x, y, k, psi, corner_data[-1]]), u_indices, (parr>0)
+            #else:
+                #return "0", "0", "0"
+            
 
 def calc_steering_angle(beta, k):
     """_summary_
@@ -135,9 +138,7 @@ def calc_curvature(u, ka, k0, k1, l0, c1):
     clothoid1_mask = (u>=(1-l0*c1))
 
     k[clothoid0_mask] = k0 + ((ka-k0)/l0) * u[clothoid0_mask]
-
     k[arc_mask] = ka
-
     k[clothoid1_mask] = ((k1*l0*c1 + ka - k1) + (k1-ka) * u[clothoid1_mask]) / (l0*c1)
 
     return k
@@ -207,7 +208,7 @@ def calc_position(u, k, psi, x0, y0):
 
     return x, y
 
-def fit_corner_model(auto_data):
+def fit_corner_model(auto_data,sides):
     """_summary_
 
     Args:
@@ -223,13 +224,13 @@ def fit_corner_model(auto_data):
     for i in range(n):
         
         temp = auto_data[:,(auto_data[-1] == i)]
-        consts[i] = differential_evolution(func=corner_diff, bounds=((-2,1),(-1,1)), args = (temp,"0", "0"), seed=88, x0=[0,0]).x
+        consts[i] = dual_annealing(func=corner_diff, bounds=((-2,2),(-2,2)), args = (temp,"0", "0",sides), seed=88, x0=[0,0], no_local_search=True, maxfun=10000, maxiter=1000).x
 
     np.savetxt("trackData\\autopilot\\cornerModel_constants.csv", consts, delimiter=",", newline="\n")
 
     return consts
 
-def produce_path(autopilot_data, consts, auto_data):
+def produce_path(autopilot_data, consts, auto_data, sides):
     """_summary_
 
     Args:
@@ -247,20 +248,40 @@ def produce_path(autopilot_data, consts, auto_data):
         corner_mask = (auto_data[-1] == i)
         st_ind = np.argwhere(corner_mask)[0,0]
         temp_data = auto_data[:,corner_mask]
-        new_data, corner_inds, n_pa = corner_diff(cnt, temp_data, None, None)
+        new_data, corner_inds, n_pa = corner_diff(cnt, temp_data, None, None, sides)
+
+        #if isinstance(n_pa,str):
+            #return "0", "0", "0"
 
         corner_inds += st_ind
+        if i in [0,22]:
+            pass
+        plot_corner(new_data, temp_data, f"Nordschleife Corner Fit {i}")
 
         if n_pa:
             
-            end_ind = np.where(corner_mask[corner_inds[-1]:])
-            straight_data = auto_data[1:3, corner_inds[-1]+1:corner_inds[-1]+end_ind]
-            temp = replace_straights(new_data[4], new_data[1:3,-1], straight_data)
+            isEnd = False
+            if i == consts.shape[0]-1:
+                straight_data = auto_data[1:3, corner_inds[-1]+1:]
+                isEnd=True
 
-            if temp == "0":
-                return "0", "0", "0"
+            else:
 
-            auto_data[corner_inds[-1]+1:corner_inds[-1]+end_ind] = temp
+                next_corner_mask = (auto_data[-1] == i+1)
+                end_ind = np.where(next_corner_mask[corner_inds[-1]:])[0]
+                st = corner_inds[-1]+1
+                nd = corner_inds[-1]+end_ind[0]
+                straight_data = auto_data[1:3, st:nd]
+            straight_data = replace_straights(new_data[4,-1], new_data[1:3,-1], straight_data)
+
+            #if isinstance(straight_data, str):
+                #return "0", "0", "0"
+
+            if isEnd:
+                auto_data[1:3,corner_inds[-1]+1:] = straight_data
+                isEnd = False
+            else:   
+                auto_data[1:3,st:nd] = straight_data
             
         auto_data[:,corner_mask] = new_data
         c_inds.append(corner_inds)
@@ -287,7 +308,7 @@ def replace_straights(psi, start_pos, straight_data, max_angle = 10, n = 10):
     """
     straight_data = check_overlap(psi, start_pos, straight_data)
 
-    if straight_data == "0":
+    if isinstance(straight_data,str):
 
         max_angle *= np.pi/180
         angles = np.linspace(0,max_angle,n+1)[1:]
@@ -326,7 +347,14 @@ def check_overlap(psi, start_pos, straight_data, m = 100, n = 10000, tol = 1e-1)
     mag = np.sqrt(1+y**2)
     vec /= mag
 
-    for d in np.linspace(0,m,n):
+    if straight_data.shape[1] == 1:
+        return straight_data
+
+    straight_data = straight_data.T
+
+    options = np.linspace(0.01,m,n)[0:]
+
+    for d in options:
 
         pos0 = start_pos+vec*d
 
@@ -339,11 +367,12 @@ def check_overlap(psi, start_pos, straight_data, m = 100, n = 10000, tol = 1e-1)
         dist = np.abs((pos2[0]-pos1[0])*(pos1[1]-pos0[1]) - (pos1[0]-pos0[0])*(pos2[1]-pos1[1])) / np.sqrt((pos2[0]-pos1[0])**2 + (pos2[1]-pos1[1])**2)
 
         if dist < tol:
-            first_ind = min(pos1_ind, pos2_ind)
-            straight_data[:min(pos1_ind, pos2_ind)] = np.array([start_pos + vec*d2 for d2 in np.linspace(0,d,first_ind+1)])
+            first_ind = max(pos1_ind, pos2_ind)
+            straight_data[:first_ind] = np.array([start_pos + vec*d2 for d2 in np.linspace(0,d,first_ind)])
 
-        else:
-            return "0"
+            return straight_data.T
+
+    return "0"
 
 def steeringAngle_fit(y, x):
 
@@ -356,55 +385,6 @@ def steeringAngle_fit(y, x):
 
     return b0, b1
 
-def plot_corner(corner_data, original_data, num, track_name):
-    """_summary_
-
-    Args:
-        corner_data (_type_): _description_
-        original_data (_type_): _description_
-        num (_type_): _description_
-        track_name (_type_): _description_
-    """
-    sns.set_theme()
-
-    fig, axes = plt.subplots(nrows=2, ncols=2)
-
-    plt.suptitle(track_name + " Corner " + str(num))
-
-    axes[0,0].plot(*original_data[1:3], "r--", label="Original")
-    axes[0,0].plot(*corner_data[1:3], "b--", label= "Model Fit")
-
-    axes[1,0].plot(original_data[0], original_data[1] - original_data[1,0], "r--", label = "Original x")
-    axes[1,0].plot(original_data[0], original_data[2] - original_data[2,0], "r-", label = "Original y")
-    axes[1,0].plot(corner_data[0], corner_data[1] - corner_data[1,0], "b--", label = "Model x")
-    axes[1,0].plot(corner_data[0], corner_data[2] - corner_data[2,0], "b-", label = "Model y")
-
-    axes[0,1].plot(*original_data[[0,3]], "r--", label = "Original")
-    axes[0,1].plot(*corner_data[[0,3]], "b--", label = "Model")
-
-    axes[1,1].plot(*original_data[[0,4]], "r--", label = "Original")
-    axes[1,1].plot(*corner_data[[0,4]], "b--", label = "Model")
-
-    axes[0,0].set_xlabel("x (m)")
-    axes[0,0].set_ylabel("y (m)")
-
-    axes[1,0].set_xlabel("u (-)")
-    axes[1,0].set_ylabel("delta pos (m)")
-
-    axes[0,1].set_xlabel("u (-)")
-    axes[0,1].set_ylabel("k (1/m)")
-
-    axes[1,1].set_xlabel("u (-)")
-    axes[1,1].set_ylabel("heading (rad)")
-
-    axes[0,0].legend()
-    axes[0,1].legend()
-    axes[1,0].legend()
-    axes[1,1].legend()
-
-    plt.tight_layout()
-    plt.show()
-
 
 def main(track_name):
     """_summary_
@@ -413,22 +393,27 @@ def main(track_name):
         track_name (_type_): _description_
     """
 
-    file_name = "TrackLimits\\trackData\\testPaths\\initial_path.csv"
+    file_name = "trackData\\testPaths\\initial_path.csv"
     autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
-    auto = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float).T
+    auto = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float)
 
-    consts = fit_corner_model(auto)
+    sideL = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataL.csv", delimiter=',', dtype=float)
+    sideR = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
+    sides = [sideL, sideR]
+
+    consts = fit_corner_model(auto, sides)
 
     consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
 
-    c_inds, autopilot_data, auto_data = produce_path(autopilot_data, track_name, consts, auto)
+    c_inds, autopilot_data, auto_data = produce_path(autopilot_data, consts, auto, sides)
+    autopilot_data[:,[16,17]] = find_inputs(auto_data, c_inds)
 
     with open(file_name,'r') as auto_file:
         header = auto_file.read().split('\n')
         header = '\n'.join(header[:2])
 
     np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerIndices.csv", np.array(c_inds, dtype=int), delimiter=',', newline='\n', fmt="%d")
-    np.savetxt("trackData\\testPaths\\"+track_name + "test.csv", autopilot_data, delimiter=',', newline='\n', header=header, fmt="%.5f")
+    np.savetxt("C:\\Users\\lachl\\OneDrive\\Documents\\PERRINN 424\\Lap Data\\"+track_name + "_test.csv", autopilot_data, delimiter=',', newline='\n', header=header, fmt="%.5f")
     np.savetxt("trackData\\testPaths\\"+track_name + "_autopilot_autodata.csv", auto_data, delimiter=',', newline='\n', fmt="%.5f")
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 import numpy as np
-import seaborn as sns
-from matplotlib import pyplot as plt
 from scipy import interpolate
+from plotTrack import plot_autodata
 
 def loadTrackData(track_files):
     """_summary_
@@ -103,29 +102,6 @@ def find_next_point(track, side, previous, n=20):
 
     angle[np.abs(angle)>np.pi/4] = -np.inf
 
-    # sns.set_theme()
-
-    # fig = plt.figure()
-    # ax = plt.axes()
-
-    # ax.scatter(*track[poss_points].T, color = 'blue')
-    # ax.scatter(*track[poss_points[angle!=-np.inf]].T, color = 'green')
-    # vector_parr = track[prev] + [del_x, del_y]
-    # vector_perp = track[prev] + [-del_y, del_x]
-
-    # ax.plot([track[prev,0], vector_parr[0]], [track[prev,1], vector_parr[1]], color='orange', label = 'parallel')
-    # ax.plot([track[prev,0], vector_perp[0]], [track[prev,1], vector_perp[1]], color='red', label = 'perpendicular')
-
-    # plt.title("Nordschleife")
-    # plt.tight_layout()
-    # plt.xlabel("X (m)")
-    # plt.ylabel("Y (m)")
-    # plt.legend()
-    # plt.show()
-
-    # if np.size(angle[angle > -1e3]) < 5:
-    #     return find_next_point(track, side, previous, int((n+1)*1.1))
-    # else:
     next_cand = np.argmax(angle)
 
     angle_diff = angle - angle[next_cand]
@@ -140,32 +116,6 @@ def find_next_point(track, side, previous, n=20):
         return first
     else:
         return poss_points[next_cand]
-
-def plotTrack(sideL, sideR, test_path):
-    """_summary_
-
-    Args:
-        sideL (_type_): _description_
-        sideR (_type_): _description_
-        test_path (_type_): _description_
-    """
-    sns.set_theme()
-
-    fig = plt.figure()
-    ax = plt.axes()
-
-    ax.plot(*sideL[1:3], color = "black")
-    ax.plot(*sideR[1:3], color = "black")
-
-    ax.plot(*test_path.T, color="orange")
-
-    plt.title("Nordschleife - Corner Splitting")
-    # plt.tight_layout()
-    plt.xlabel("X (m)")
-    plt.ylabel("Y (m)")
-    # plt.legend()
-
-    plt.show()
 
 def saveTrack(sides, track_name):
     """_summary_
@@ -188,7 +138,7 @@ def loadTrack(track_name):
     Returns:
         _type_: _description_
     """
-    with open("trackData\\"+track_name+"_sides.txt", 'r') as sideFile:
+    with open("trackData\\track_sides\\"+track_name+"_sides.txt", 'r') as sideFile:
         
         sides = sideFile.read().split('\n')
 
@@ -196,7 +146,7 @@ def loadTrack(track_name):
 
     return [[int(r) for r in x.split(',')] for x in sides]
     
-def spline_curvature(tck, u, side = True):
+def spline_curvature(tck, u, isSide = True):
     """_summary_
 
     Args:
@@ -225,10 +175,13 @@ def spline_curvature(tck, u, side = True):
     psi[mask_q4] = np.arctan(dy[mask_q4]/dx[mask_q4]) + np.pi*2
 
     mag = np.sqrt(dx**2+dy**2)
+    
+    if isSide:
 
-    if side:
-        return np.array([u,x,y,psi, dx/mag, dy/mag])
+        return np.array([u,x,y,k, dx/mag, dy/mag])
+
     else:
+
         return np.array([u,x,y,k,psi,u])
 
 def interpolateTrack(track, sides):
@@ -276,39 +229,85 @@ def main():
 
     sides = interpolateTrack(track, sides)
 
-    np.savetxt("trackData\\"+track_name+"_sidesDataL.csv", sides[0], delimiter=',', newline='\n')
-    np.savetxt("trackData\\"+track_name+"_sidesDataR.csv", sides[1], delimiter=',', newline='\n')
+    auto_data = processAutopilot("trackData\\testPaths\\initial_path.csv")
+
+    plot_autodata(auto_data, sides, track_name+" Corner Splitting")
+
+    np.savetxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv",auto_data, delimiter=',', newline='\n', fmt="%.5f")
+
+    np.savetxt("trackData\\track_sides\\"+track_name+"_sidesDataL.csv", sides[0], delimiter=',', newline='\n')
+    np.savetxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", sides[1], delimiter=',', newline='\n')
 
 
-def find_corners(curvature, threshold=3e-3):
+def check_corner(start, end, u, k, min_peak = 1e-2, min_len = 20, min_rat=0.5):
+
+    corner_inds = []
+
+    for st, en in zip(start, end):
+
+        k_t = k[st:en]
+        u_t = u[st:en]
+
+        ind_peak = np.argmax(k_t)
+
+        peak = k_t[ind_peak]
+
+        if peak > min_peak and en-st>min_len:
+
+            before_inds = np.arange(1,ind_peak)
+            after_inds = np.arange(ind_peak+1,k_t.size-1)
+
+            before_u = u_t[before_inds]; before_k = k_t[before_inds]
+            after_u = u_t[after_inds]; after_k = k_t[after_inds]
+
+            before_del = (before_k-k_t[0]) / (before_u-u_t[0])
+            after_del = (after_k-k_t[-1]) / (after_u-u_t[-1])
+
+            bf_del_pk = (k_t[ind_peak]-k_t[0]) / (u_t[ind_peak]-u_t[0])
+            af_del_pk = (k_t[ind_peak]-k_t[-1]) / (u_t[ind_peak]-u_t[-1])
+
+            bf_i = np.nonzero((before_del<bf_del_pk*min_rat))[0]
+            af_i = np.nonzero((after_del>af_del_pk*min_rat))[0]
+
+            if bf_i.size>0:
+                st += before_inds[bf_i[-1]]
+            if af_i.size>0:
+                en = st + after_inds[af_i[0]]
+
+            if en-st > min_len:
+                corner_inds.append([st,en])
+
+    return corner_inds
+
+def find_corners(u, k, threshold=1e-3):
     """_summary_
 
     Args:
-        curvature (_type_): _description_
+        k (_type_): _description_
         threshold (_type_, optional): _description_. Defaults to 3e-3.
 
     Returns:
         _type_: _description_
     """
-    auto_corners = np.zeros(curvature.shape[0])
+    auto_corners = np.zeros(k.shape[0])
 
-    auto_corners[np.abs(curvature) > threshold] = 1
+    auto_corners[k > threshold] = 1
 
     mask = np.ediff1d(auto_corners)
 
     auto_corners[auto_corners == 0] = -1
 
-    start = np.where((mask>0))[0] #  | ((auto_corners[1:] != -1) & (mask_change!=0))
-    end = np.where((mask<0))[0] # | ((auto_corners[1:] == -1) & (mask_change!=0))
+    start = np.nonzero((mask>0))[0]+1
+    end = np.nonzero((mask<0))[0]+1
 
     if auto_corners[0] == 1:
         start = np.concatenate((np.array([0]), start))
     if auto_corners[-1] == 1:
-        end = np.concatenate((end, np.array([-1])))
+        end = np.concatenate((end, np.array([-2])))
 
-    new_pairs = [[st, en] for st,en in zip(start,end) if en-st > 50]
+    new_pairs = check_corner(start, end, u, k)    #en-st > 20 and en-st < 300
 
-    auto_corners = np.zeros(curvature.shape[0]) -1
+    auto_corners = np.zeros(k.shape[0]) -1
 
     for i, (st,en) in enumerate(new_pairs):
 
@@ -316,7 +315,7 @@ def find_corners(curvature, threshold=3e-3):
 
     return auto_corners.astype(int)
 
-def processAutopilot(file_name, track_name):
+def processAutopilot(file_name):
     """_summary_
 
     Args:
@@ -326,11 +325,11 @@ def processAutopilot(file_name, track_name):
     autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
 
     tck_auto, u_points = interpolate.splprep(autopilot_data[:,[10,12]].T, w=autopilot_data[:,20])
-    auto_data = spline_curvature(tck_auto, u_points, side=False)
+    auto_data = spline_curvature(tck_auto, u_points, False)
 
-    auto_data[-1] = find_corners(auto_data[3])
+    auto_data[-1] = find_corners(auto_data[0], np.abs(auto_data[3]))
 
-    np.savetxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv",auto_data.T, delimiter=',', newline='\n', fmt="%.5f")
+    return auto_data
 
 def AutopilotSine(auto_data, m=0.5, sigma=5e2):
     """_summary_
@@ -359,16 +358,45 @@ def AutopilotSine(auto_data, m=0.5, sigma=5e2):
 
     return steering_angle
 
+
+def check_inside(coords, sides, tol1=0.0, tol2 = -1, threshold=3e-3):
+    """_summary_
+
+    Args:
+        auto_data (_type_): _description_
+        sides (_type_): _description_
+        tol (float, optional): _description_. Defaults to 0.1.
+
+    Returns:
+        _type_: _description_
+    """
+
+    for cd in coords.T:
+
+        dist_l = np.sum(np.square(cd-sides[0][1:3].T),axis=1)
+        dist_r = np.sum(np.square(cd-sides[1][1:3].T),axis=1)
+
+        ind_min_l = np.argmin(dist_l); ind_min_r = np.argmin(dist_r)
+
+        data_l=sides[0][:,ind_min_l]; data_r=sides[1][:,ind_min_r]
+    
+        delta_l = cd-data_l[1:3]; delta_r = cd-data_r[1:3]
+
+        a_l = np.zeros((2,2)); a_r = np.zeros((2,2))
+        vec_l = data_l[-2:]; vec_r = data_r[-2:]
+
+        a_l[0] = vec_l; a_l[1] = vec_l[::-1]; a_l[1,0] *= -1
+        a_r[0] = vec_r; a_r[1] = vec_r[::-1]; a_r[1,0] *= -1
+
+        parr_l, perp_l = np.linalg.solve(a_l, delta_l)
+        parr_r, perp_r = np.linalg.solve(a_r, delta_r)
+
+        if -1*perp_l < tol1+(tol2-tol1)*(data_l[3]<threshold) or perp_r < tol1+(tol2-tol1)*(data_r[3]<threshold):
+            return False
+
+    return True
+
 if __name__ == "__main__":
     """_summary_
     """    
-    #main()
-
-    track_name = "nordschleife"
-
-    processAutopilot("TrackLimits\\trackData\\testPaths\\initial_path.csv",track_name)
-
-    #auto = np.genfromtxt("trackData\\autopilot"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float)
-    # sideL = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataL.csv", delimiter=',', dtype=float)
-    # sideR = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
-    # test_path = np.genfromtxt("trackData\\testPaths\\"+track_name + "_autopilot_xyChange_wavy.csv", delimiter=',',skip_header=2, dtype=float)
+    main()
