@@ -1,7 +1,8 @@
+from os import times
 import numpy as np
 from scipy.optimize import minimize_scalar, dual_annealing
-from plotTrack import plot_autopilot, plot_corner
-from findLimits_take2 import check_inside
+from plotTrack import plot_autopilot, plot_corner, plot_cornerSegments, plot_steeringFit, plot_cornerLength, plot_optimiser, plot_solution,plot_constBounds
+from findLimits import check_inside
 from acceleration_model import find_inputs
 
 def corner_diff_wrapper(c, consts, corner_data, sides):
@@ -21,8 +22,8 @@ def corner_diff(consts, corner_data, c, mode, sides):
         _type_: _description_
     """
 
-    if mode != "1":
-        c = minimize_scalar(fun=corner_diff_wrapper, method="bounded", bounds=(-0.5,0.5), args = (consts, corner_data, sides)).x
+    if not isinstance(c,float):
+        c = minimize_scalar(fun=corner_diff_wrapper, method="bounded", bounds=(-0.1,0.1), args = (consts, corner_data, sides)).x
 
     k0 = corner_data[3,0]
     k1 = corner_data[3,-1]
@@ -89,6 +90,7 @@ def corner_diff(consts, corner_data, c, mode, sides):
         a = np.zeros((2,2))
         a[0] = vec
         a[1] = vec[::-1]
+        a[1,1] *=-1
 
         parr, perp = np.linalg.solve(a, delta)
 
@@ -96,10 +98,10 @@ def corner_diff(consts, corner_data, c, mode, sides):
             return np.abs(perp)
         else:
             isInside = check_inside(np.array([x,y]),sides)
-            #if isInside:
-            return np.array([corner_data[0], x, y, k, psi, corner_data[-1]]), u_indices, (parr>0)
-            #else:
-                #return "0", "0", "0"
+            if isInside:
+                return np.array([corner_data[0], x, y, k, psi, corner_data[-1]]), u_indices, (parr>0)
+            else:
+                return "0", "0", "0"
             
 
 def calc_steering_angle(beta, k):
@@ -250,13 +252,14 @@ def produce_path(autopilot_data, consts, auto_data, sides):
         temp_data = auto_data[:,corner_mask]
         new_data, corner_inds, n_pa = corner_diff(cnt, temp_data, None, None, sides)
 
-        #if isinstance(n_pa,str):
-            #return "0", "0", "0"
+        if isinstance(n_pa,str):
+            return "0", "0", "0"
+            #continue
 
         corner_inds += st_ind
-        if i in [0,22]:
-            pass
-        plot_corner(new_data, temp_data, f"Nordschleife Corner Fit {i}")
+        # if i in [0,22]:
+        #     pass
+        #plot_corner(new_data, temp_data, f"Nordschleife Corner Fit {i}")
 
         if n_pa:
             
@@ -274,8 +277,8 @@ def produce_path(autopilot_data, consts, auto_data, sides):
                 straight_data = auto_data[1:3, st:nd]
             straight_data = replace_straights(new_data[4,-1], new_data[1:3,-1], straight_data)
 
-            #if isinstance(straight_data, str):
-                #return "0", "0", "0"
+            if isinstance(straight_data, str):
+                return "0", "0", "0"
 
             if isEnd:
                 auto_data[1:3,corner_inds[-1]+1:] = straight_data
@@ -306,9 +309,9 @@ def replace_straights(psi, start_pos, straight_data, max_angle = 10, n = 10):
     Returns:
         _type_: _description_
     """
-    straight_data = check_overlap(psi, start_pos, straight_data)
+    straight_data_temp = check_overlap(psi, start_pos, straight_data)
 
-    if isinstance(straight_data,str):
+    if isinstance(straight_data_temp,str):
 
         max_angle *= np.pi/180
         angles = np.linspace(0,max_angle,n+1)[1:]
@@ -317,10 +320,10 @@ def replace_straights(psi, start_pos, straight_data, max_angle = 10, n = 10):
 
         for ang in angles:
 
-            straight_data = check_overlap(psi+ang, start_pos, straight_data)
+            straight_data_temp = check_overlap(psi+ang, start_pos, straight_data)
 
-            if straight_data != "0":
-                return straight_data
+            if not isinstance(straight_data_temp,str):
+                return straight_data_temp
 
         return "0"
     else:
@@ -340,6 +343,8 @@ def check_overlap(psi, start_pos, straight_data, m = 100, n = 10000, tol = 1e-1)
     Returns:
         _type_: _description_
     """
+
+    # have to refactor this shit, it is terrible
     
     y = np.tan(psi)
 
@@ -383,8 +388,25 @@ def steeringAngle_fit(y, x):
 
     b0 = np.mean(y) - b1 * np.mean(x)
 
+    # plot_steeringFit(x,y, [b0,b1])
+
     return b0, b1
 
+def get_solution_consts():
+
+    with open("trackData\\testPaths\\optimisationResults.txt", "r") as sol_file:
+
+        sol_consts = sol_file.read()
+        sol_file.close()
+
+    sol_consts = sol_consts.replace("\n", "").split("][")
+    sol_consts[0] = sol_consts[0][1:];sol_consts[-1] = sol_consts[-1][:-1]
+
+    sol_consts = [[float(x) for x in ln.split()] for ln in sol_consts]
+
+    sol_consts = [np.reshape(ln, (-1,2)) for ln in sol_consts]
+
+    return np.array(sol_consts)[-1]
 
 def main(track_name):
     """_summary_
@@ -394,7 +416,7 @@ def main(track_name):
     """
 
     file_name = "trackData\\testPaths\\initial_path.csv"
-    autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
+    old_autopilot_data = np.genfromtxt(file_name, skip_header=2, delimiter=',', dtype=float)
     auto = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',', dtype=float)
 
     sideL = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataL.csv", delimiter=',', dtype=float)
@@ -405,8 +427,10 @@ def main(track_name):
 
     consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
 
-    c_inds, autopilot_data, auto_data = produce_path(autopilot_data, consts, auto, sides)
-    autopilot_data[:,[16,17]] = find_inputs(auto_data, c_inds)
+    const_best = get_solution_consts()
+
+    c_inds, autopilot_data, auto_data = produce_path(old_autopilot_data, const_best, auto.copy(), sides)
+    autopilot_data[:,17:19], pred_time = find_inputs(auto_data, c_inds)
 
     with open(file_name,'r') as auto_file:
         header = auto_file.read().split('\n')
