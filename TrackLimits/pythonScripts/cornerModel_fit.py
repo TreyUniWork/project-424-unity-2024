@@ -423,9 +423,9 @@ def main(track_name):
     sideR = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
     sides = [sideL, sideR]
 
-    consts = fit_corner_model(auto, sides)
+    # consts = fit_corner_model(auto, sides)
 
-    consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
+    # consts = np.genfromtxt("trackData\\autopilot\\cornerModel_constants.csv", delimiter=",")
 
     const_best = get_solution_consts()
 

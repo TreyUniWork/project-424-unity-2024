@@ -71,7 +71,7 @@ def plot_optimiser(times):
     fig, ax = plt.subplots()
 
     ax.plot(np.arange(times.size)[~inf_mask], times[~inf_mask], "*", color="green", label="Feasible")
-    ax.plot(best_sol_inds, best_sol, color="orange", label="Best Solution")
+    ax.plot(best_sol_inds, best_sol, color="orange", label="Best Solution", linewidth=3)
 
     plt.xlabel("Iterations")
     plt.ylabel("Objective (s)")
@@ -192,7 +192,7 @@ def plot_cornerLength(corner_data, corner_def, cs, sides, title):
         starts[i] = int(corner_mask[0])
         ends[i] = int(corner_mask[-1])
 
-    colors = ["red", "orange", "yellow", "green", "magenta", "cyan", "purple"]
+    colors = ["red", "orange", "yellow", "green", "magenta", "purple", ""]
     for j, c_data in enumerate(corner_data):
         for i in range(siz):
             if j == 0:
@@ -539,7 +539,7 @@ def main():
     """_summary_
     """
     track_name = "nordschleife"
-    corner_indices = np.genfromtxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerIndices.csv", delimiter=',')
+    corner_indices = np.genfromtxt("trackData\\testPaths\\"+track_name + "_autopilot_cornerIndices.csv", delimiter=',', dtype=int)
     autopilot_data = np.genfromtxt("trackData\\testPaths\\"+track_name + "_test.csv",  delimiter=',')
     new_auto_data = np.genfromtxt("trackData\\testPaths\\"+track_name + "_autopilot_autodata.csv", delimiter=',')
     old_auto_data = np.genfromtxt("trackData\\autopilot\\"+track_name + "_autopilot_interpolated.csv", delimiter=',')
@@ -547,7 +547,9 @@ def main():
     sideR = np.genfromtxt("trackData\\track_sides\\"+track_name+"_sidesDataR.csv", delimiter=',', dtype=float)
     sides = [sideL, sideR]
 
-    plot_autopilot(new_auto_data, old_auto_data, sides, "C")
+    # plot_autopilot(new_auto_data, old_auto_data, sides, "C")
+
+    plot_cornerSegments(new_auto_data, corner_indices, sides, "")
 
 if __name__ == "__main__":
     """_summary_
