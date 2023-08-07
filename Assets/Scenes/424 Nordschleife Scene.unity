@@ -10341,15 +10341,20 @@ PrefabInstance:
       objectReference: {fileID: 114863622256485037}
     - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
         type: 3}
+      propertyPath: autoStart
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
+        type: 3}
       propertyPath: recordedLap
       value: 
-      objectReference: {fileID: 11400000, guid: 426e13e9f94bd654f833995868310165,
+      objectReference: {fileID: 11400000, guid: 2a5a0772017ab3345b40f71799fc65a3,
         type: 2}
     - target: {fileID: 6920350783621389725, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
         type: 3}
       propertyPath: recordedLap
       value: 
-      objectReference: {fileID: 11400000, guid: 6fb816e2428a4664b9895c70aa289633,
+      objectReference: {fileID: 11400000, guid: 815ad4ff6d4e4ee45b0171eadf81f6c7,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 17af7a7ed4e97da4591fd2467c0b19b5, type: 3}
