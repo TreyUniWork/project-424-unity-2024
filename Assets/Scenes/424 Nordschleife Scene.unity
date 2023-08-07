@@ -9847,6 +9847,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2476090975454418208, guid: f4b41eff2d99ceb45bcfc5a4a5e57b1e,
         type: 3}
+      propertyPath: showLapList
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2476090975454418208, guid: f4b41eff2d99ceb45bcfc5a4a5e57b1e,
+        type: 3}
       propertyPath: templates.Array.size
       value: 21
       objectReference: {fileID: 0}
@@ -10346,15 +10351,35 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
         type: 3}
+      propertyPath: inputType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
+        type: 3}
       propertyPath: recordedLap
       value: 
-      objectReference: {fileID: 11400000, guid: 2a5a0772017ab3345b40f71799fc65a3,
+      objectReference: {fileID: 11400000, guid: 5ac71269d2a73ed498f99e62e65e9572,
         type: 2}
+    - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
+        type: 3}
+      propertyPath: startup.throttle
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
+        type: 3}
+      propertyPath: startup.isStartUp
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6920350783621389724, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
+        type: 3}
+      propertyPath: startup.speedPercentage
+      value: 0.7
+      objectReference: {fileID: 0}
     - target: {fileID: 6920350783621389725, guid: 17af7a7ed4e97da4591fd2467c0b19b5,
         type: 3}
       propertyPath: recordedLap
       value: 
-      objectReference: {fileID: 11400000, guid: 815ad4ff6d4e4ee45b0171eadf81f6c7,
+      objectReference: {fileID: 11400000, guid: 43a58c11afe4d264b9bbb6b6245ac230,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 17af7a7ed4e97da4591fd2467c0b19b5, type: 3}
