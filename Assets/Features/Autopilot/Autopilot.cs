@@ -102,20 +102,12 @@ namespace Perrinn424.AutopilotSystem
                 UpdateAutopilotInOnStatus();
             }
         }
-       void OnTriggerEnter(Collider other)
-        {
-            if (other.gameObject.CompareTag("LapLine"))
-            {
-                HasCompletedLap = true;
-                Debug.Log("Lap completed!");
-            }
-            
-            if (other.gameObject.CompareTag("TestObject"))
-            {
-                Debug.Log("Hit test object!");
-            }
-        }
+       
 
+        public void CompleteLap()
+        {
+            HasCompletedLap = true;
+        }
 
 
             public void StartNewLap()
@@ -151,6 +143,11 @@ namespace Perrinn424.AutopilotSystem
             debugDrawer.Set(targetPosition, lateralCorrector.ApplicationPosition, lateralCorrector.Force);
             WriteInput(runningSample);
 
+        }
+
+        public float GetFinalLapTime()
+        {
+            return timer.currentLapTime;
         }
 
         //TODO make private and use Property PlayingTime
