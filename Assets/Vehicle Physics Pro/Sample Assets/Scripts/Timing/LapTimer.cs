@@ -196,7 +196,10 @@ public class LapTimer : MonoBehaviour
 			}
 			
 		// Print the final lap time to the console
-    	//Debug.Log("Final Lap Time: " + m_lastTime);
+    	Debug.Log("Final Lap Time: " + m_lastTime);
+
+		// Print number of laps completed
+		Debug.Log("Completed Laps: " + m_laps.Count);
 	}
 
 

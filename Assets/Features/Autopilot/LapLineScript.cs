@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using Perrinn424.AutopilotSystem;
 
-public class LapLineScript : MonoBehaviour
+/*public class LapLineScript : MonoBehaviour
 {
     public Autopilot autopilot;
     private bool isFirstTime = true;
@@ -27,3 +27,4 @@ public class LapLineScript : MonoBehaviour
             }
         }
 }
+*/
