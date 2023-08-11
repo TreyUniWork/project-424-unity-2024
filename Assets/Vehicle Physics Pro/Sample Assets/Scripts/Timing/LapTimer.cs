@@ -194,7 +194,10 @@ public class LapTimer : MonoBehaviour
 			externalDisplay.lapTime = t;
 			externalDisplay.LapPass();
 			}
-		}
+			
+		// Print the final lap time to the console
+    	//Debug.Log("Final Lap Time: " + m_lastTime);
+	}
 
 
 	void SectorPass (int sector, float splitTime)

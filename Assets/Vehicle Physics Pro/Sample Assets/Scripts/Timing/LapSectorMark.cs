@@ -10,7 +10,6 @@
 using UnityEngine;
 using EdyCommonTools;
 
-
 namespace VehiclePhysics.Timing
 {
 
@@ -29,7 +28,6 @@ public class LapSectorMark : MonoBehaviour
 	LapTimer m_lapTimer;
 	Plane m_detectionPlane;
 	Collider m_thisCollider;
-
 
 	void OnEnable ()
 		{
@@ -56,7 +54,7 @@ public class LapSectorMark : MonoBehaviour
 
 		VehicleBase vehicle = other.GetComponentInParent<VehicleBase>();
 		if (vehicle == null) return;
-
+		
 		// We have a vehicle crossing the mark. Transponder position required.
 		// Transponder is also used to prevent multiple-hits caused by several colliders of the car hitting the trigger.
 

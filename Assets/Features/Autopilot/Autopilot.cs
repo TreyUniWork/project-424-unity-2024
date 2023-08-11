@@ -13,6 +13,7 @@ namespace Perrinn424.AutopilotSystem
             Processed
         }
 
+        public bool HasCompletedLap { get; private set; }
 
         [Header("References")]
         public RecordedLap recordedLap;
@@ -54,6 +55,18 @@ namespace Perrinn424.AutopilotSystem
 
         public override void OnEnableVehicle()
         {
+              // Load the asset file into recordedLap
+                recordedLap = Resources.Load<RecordedLap>("GeneticAssets/asset1");
+                if (recordedLap != null)
+                {
+                    Debug.Log("Successfully loaded asset: GeneticAssets/asset1");
+                }
+                else
+                {
+                    Debug.LogError("Failed to load asset: GeneticAssets/asset1");
+                    return;
+                }
+
             autopilotSearcher = new AutopilotSearcher(this, recordedLap);
             lateralCorrector.Init(vehicle.cachedRigidbody);
             timeCorrector.Init(vehicle.cachedRigidbody);
@@ -89,7 +102,18 @@ namespace Perrinn424.AutopilotSystem
                 UpdateAutopilotInOnStatus();
             }
         }
+       
 
+        public void CompleteLap()
+        {
+            HasCompletedLap = true;
+        }
+
+
+            public void StartNewLap()
+            {
+                HasCompletedLap = false;
+            }
         private void UpdateAutopilotInOnStatus()
         {
             startup.IsStartup(ReferenceSpeed);
@@ -119,6 +143,11 @@ namespace Perrinn424.AutopilotSystem
             debugDrawer.Set(targetPosition, lateralCorrector.ApplicationPosition, lateralCorrector.Force);
             WriteInput(runningSample);
 
+        }
+
+        public float GetFinalLapTime()
+        {
+            return timer.currentLapTime;
         }
 
         //TODO make private and use Property PlayingTime
@@ -193,6 +222,19 @@ namespace Perrinn424.AutopilotSystem
                 vehicle.data.Set(Channel.Custom, Perrinn424Data.InputGear, 1); //TODO
             }
         }
+        public void ChangeLapData(RecordedLap newLap)
+        {
+            Debug.Log("Changing lap data...");
+
+            recordedLap = newLap;
+            Debug.Log("New lap data set to: " + newLap);
+
+            // Reset or reinitialize any necessary variables here
+            // For example, if the AutopilotSearcher uses the recordedLap:
+            autopilotSearcher = new AutopilotSearcher(this, recordedLap);
+            Debug.Log("AutopilotSearcher reinitialized with new lap data.");
+        }
+
 
         public override float CalculateDuration()
         {
