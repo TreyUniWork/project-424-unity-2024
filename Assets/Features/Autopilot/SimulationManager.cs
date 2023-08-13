@@ -3,15 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using Perrinn424.AutopilotSystem;
 using VehiclePhysics.Timing;
+using System.IO;
+using System.Linq;
 
-/*
+
 public class SimulationManager : MonoBehaviour
 {
     public Autopilot autopilot;
+
+    /*
+    public Autopilot autopilot;
     //private int lapCount = 0;
-    private static int GENERATIONS_LENGTH = 5; // max number of assets per generation
+    public int generations_length = 5; // max number of assets per generation (need to change depending on GA)
     //private string[] assetPaths = { "GeneticAssets/asset1", "GeneticAssets/asset2" };
     private int currentAssetIndex = 0;
+    private int currentGeneration = 0;
+    [SerializeField] private string generationPrefix = "GEN";
+    [SerializeField] private string assetPrefix = "asset";
 
     void Start()
     {
@@ -20,6 +28,7 @@ public class SimulationManager : MonoBehaviour
         LoadLap(assetPaths[currentAssetIndex]);
     }
 
+    /*
     void Update()
     {
         if (autopilot.HasCompletedLap)
@@ -51,11 +60,50 @@ public class SimulationManager : MonoBehaviour
                 Debug.Log("Starting a new lap with asset: " + assetPaths[currentAssetIndex]);
             }
 
-            // Start a new lap
-            autopilot.StartNewLap();
         }
     }
+    */
 
+    /*
+    public void SwitchOutLap()
+    {
+        // check what folder to load from
+        string basePath = "GeneticAssets/"; // Replace with the actual path to your folders
+
+        string[] folderPaths = Directory.GetDirectories(basePath, "GEN*"); // Get all folders matching the pattern
+
+        if (folderPaths.Length > 0)
+        {
+            // Sort the folder names in descending order
+            var sortedFolders = folderPaths.OrderByDescending(folderPath => GetGenerationNumber(folderPath));
+
+            string latestGenerationFolder = sortedFolders.First(); // Get the latest generation folder
+
+            // Access the desired file within the latest generation folder
+            string filePathInLatestGeneration = System.IO.Path.Combine(latestGenerationFolder, "YourFileName.ext");
+            Debug.Log("Selected File: " + filePathInLatestGeneration);
+        }
+        else
+        {
+            Debug.Log("No generation folders found.");
+        }
+
+        // check if which asset file to load
+
+        LoadLap();
+    }
+    private int GetGenerationNumber(string folderPath)
+    {
+        string folderName = System.IO.Path.GetFileName(folderPath);
+        int generationNumber = 0;
+
+        if (int.TryParse(folderName.Substring(3), out generationNumber))
+        {
+            return generationNumber;
+        }
+
+        return 0; // Return 0 if parsing fails
+    }
 
     private void LoadLap(string assetPath)
     {
@@ -71,6 +119,7 @@ public class SimulationManager : MonoBehaviour
             Debug.LogError("Failed to load asset: " + assetPath);
         }
     }
+    */
+    
 }
 
-*/

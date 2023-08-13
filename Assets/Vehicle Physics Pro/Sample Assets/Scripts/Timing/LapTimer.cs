@@ -15,6 +15,10 @@ namespace VehiclePhysics.Timing
 
 public class LapTimer : MonoBehaviour
 	{
+		// AUT
+		public SimulationManager simulationManager;
+
+
 	[Range(1,10)]
 	public int sectors = 3;
 	public float minLapTime = 30.0f;
@@ -195,11 +199,20 @@ public class LapTimer : MonoBehaviour
 			externalDisplay.LapPass();
 			}
 			
+		//AUT Eirik
+
 		// Print the final lap time to the console
     	Debug.Log("Final Lap Time: " + m_lastTime);
 
 		// Print number of laps completed
 		Debug.Log("Completed Laps: " + m_laps.Count);
+
+			if (m_laps.Count % 2 == 0)
+			{
+				// send every 2nd lap time because each asset file runs 2 laps.
+				Debug.Log("Switch out lap, " + m_lastTime);
+				//simulationManager.SwitchOutLap();
+			}
 	}
 
 
