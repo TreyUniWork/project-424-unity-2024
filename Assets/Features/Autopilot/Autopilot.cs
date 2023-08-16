@@ -55,18 +55,6 @@ namespace Perrinn424.AutopilotSystem
 
         public override void OnEnableVehicle()
         {
-            // Load the asset file into recordedLap
-            recordedLap = Resources.Load<RecordedLap>("GeneticAssets/asset1");
-            if (recordedLap != null)
-            {
-                Debug.Log("Successfully loaded asset: GeneticAssets/asset1");
-            }
-            else
-            {
-                Debug.LogError("Failed to load asset: GeneticAssets/asset1");
-                return;
-            }
-
             autopilotSearcher = new AutopilotSearcher(this, recordedLap);
             lateralCorrector.Init(vehicle.cachedRigidbody);
             timeCorrector.Init(vehicle.cachedRigidbody);

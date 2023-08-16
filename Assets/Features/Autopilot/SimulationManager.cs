@@ -10,8 +10,13 @@ using System.Linq;
 public class SimulationManager : MonoBehaviour
 {
     public Autopilot autopilot;
+    private int maxAssetsPerGeneration = 5;
+    private int currentAssetIndex = 0;
+    private int currentGenerationIndex = -1; // Start with -1 to indicate no generation selected yet
+    private string basePath = "Assets/Resources/GeneticAssets";
 
     /*
+     * old stuff
     public Autopilot autopilot;
     //private int lapCount = 0;
     public int generations_length = 5; // max number of assets per generation (need to change depending on GA)
@@ -64,34 +69,65 @@ public class SimulationManager : MonoBehaviour
     }
     */
 
-    /*
+    private void Start()
+    {
+        // init lap
+        SwitchOutLap();
+    }
+
     public void SwitchOutLap()
     {
-        // check what folder to load from
-        string basePath = "GeneticAssets/"; // Replace with the actual path to your folders
+        SelectLatestGeneration();
+    }
 
-        string[] folderPaths = Directory.GetDirectories(basePath, "GEN*"); // Get all folders matching the pattern
+    // selects the GEN* folder with the highest number
+    private void SelectLatestGeneration()
+    {
+        string[] folderPaths = Directory.GetDirectories(basePath, "GEN*");
 
         if (folderPaths.Length > 0)
         {
-            // Sort the folder names in descending order
             var sortedFolders = folderPaths.OrderByDescending(folderPath => GetGenerationNumber(folderPath));
 
-            string latestGenerationFolder = sortedFolders.First(); // Get the latest generation folder
+            currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
 
-            // Access the desired file within the latest generation folder
-            string filePathInLatestGeneration = System.IO.Path.Combine(latestGenerationFolder, "YourFileName.ext");
-            Debug.Log("Selected File: " + filePathInLatestGeneration);
+            CycleToNextAsset();
         }
         else
         {
             Debug.Log("No generation folders found.");
         }
-
-        // check if which asset file to load
-
-        LoadLap();
     }
+
+    // selects the next asset in the folder
+    private void CycleToNextAsset()
+    {
+        string[] folderPaths = Directory.GetDirectories(basePath, "GEN*");
+
+        if (folderPaths.Length > 0 && currentGenerationIndex >= 0 && currentGenerationIndex < folderPaths.Length)
+        {
+            currentAssetIndex = (currentAssetIndex % maxAssetsPerGeneration) + 1;
+
+            string currentGenerationFolder = folderPaths[currentGenerationIndex];
+            string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"asset{currentAssetIndex}.asset");
+
+            if (File.Exists(currentAssetFile))
+            {
+                Debug.Log("Selected File: " + currentAssetFile);
+                // Do something with the asset file here
+                LoadLap(currentAssetFile);
+            }
+            else
+            {
+                Debug.LogWarning($"Asset file not found: {currentAssetFile}");
+            }
+        }
+        else
+        {
+            Debug.Log("Invalid generation index or no generation folders found.");
+        }
+    }
+
     private int GetGenerationNumber(string folderPath)
     {
         string folderName = System.IO.Path.GetFileName(folderPath);
@@ -105,8 +141,24 @@ public class SimulationManager : MonoBehaviour
         return 0; // Return 0 if parsing fails
     }
 
+    // switch out the lap in unity.
     private void LoadLap(string assetPath)
     {
+        // trim asset path so it doesn't include resources (very hacky)
+        string resourcesPath = "Assets/Resources/";
+
+        if (assetPath.StartsWith(resourcesPath))
+        {
+            int startIndex = assetPath.IndexOf(resourcesPath) + resourcesPath.Length;
+            assetPath = assetPath.Substring(startIndex);
+            int dotIndex = assetPath.LastIndexOf('.');
+
+            if (dotIndex >= 0)
+            {
+                assetPath = assetPath.Substring(0, dotIndex);
+            }
+        }
+
         RecordedLap newLap = Resources.Load<RecordedLap>(assetPath);
         autopilot.recordedLap = newLap;
 
@@ -119,7 +171,7 @@ public class SimulationManager : MonoBehaviour
             Debug.LogError("Failed to load asset: " + assetPath);
         }
     }
-    */
-    
+
+
 }
 

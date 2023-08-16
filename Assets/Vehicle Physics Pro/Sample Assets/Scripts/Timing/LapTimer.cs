@@ -207,12 +207,11 @@ public class LapTimer : MonoBehaviour
 		// Print number of laps completed
 		Debug.Log("Completed Laps: " + m_laps.Count);
 
-			if (m_laps.Count % 2 == 0)
-			{
-				// send every 2nd lap time because each asset file runs 2 laps.
-				Debug.Log("Switch out lap, " + m_lastTime);
-				//simulationManager.SwitchOutLap();
-			}
+			
+			
+		// Switch out lap to next asset file
+		simulationManager.SwitchOutLap();
+			
 	}
 
 
