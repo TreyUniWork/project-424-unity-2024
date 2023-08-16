@@ -14,64 +14,16 @@ public class SimulationManager : MonoBehaviour
     private int currentAssetIndex = 0;
     private int currentGenerationIndex = -1; // Start with -1 to indicate no generation selected yet
     private string basePath = "Assets/Resources/GeneticAssets";
+    private const string CounterKey = "CurrentAssetIndex";
 
-    /*
-     * old stuff
-    public Autopilot autopilot;
-    //private int lapCount = 0;
-    public int generations_length = 5; // max number of assets per generation (need to change depending on GA)
-    //private string[] assetPaths = { "GeneticAssets/asset1", "GeneticAssets/asset2" };
-    private int currentAssetIndex = 0;
-    private int currentGeneration = 0;
-    [SerializeField] private string generationPrefix = "GEN";
-    [SerializeField] private string assetPrefix = "asset";
-
-    void Start()
-    {
-        //autopilot.enabled = true;
-
-        LoadLap(assetPaths[currentAssetIndex]);
-    }
-
-    /*
-    void Update()
-    {
-        if (autopilot.HasCompletedLap)
-        {
-            //float finalLapTime = autopilot.CalculateDuration();
-            Debug.Log("Final lap time: " + finalLapTime);
-
-            lapCount++;
-            Debug.Log("Lap completed. Total laps: " + lapCount);
-
-            if (lapCount > 1)
-            {
-                // Load the next asset file
-                currentAssetIndex = (currentAssetIndex + 1) % assetPaths.Length;
-                RecordedLap newLap = Resources.Load<RecordedLap>(assetPaths[currentAssetIndex]);
-                autopilot.recordedLap = newLap;
-
-                if (newLap != null)
-                {
-                    Debug.Log("Loaded asset: " + assetPaths[currentAssetIndex]);
-                }
-                else
-                {
-                    Debug.LogError("Failed to load asset: " + assetPaths[currentAssetIndex]);
-                }
-
-                // Reset lap count
-                lapCount = 0;
-                Debug.Log("Starting a new lap with asset: " + assetPaths[currentAssetIndex]);
-            }
-
-        }
-    }
-    */
 
     private void Start()
     {
         // init lap
+
+        // Load the current asset index value from PlayerPrefs
+        //currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
+
         SwitchOutLap();
     }
 
@@ -114,8 +66,11 @@ public class SimulationManager : MonoBehaviour
             if (File.Exists(currentAssetFile))
             {
                 Debug.Log("Selected File: " + currentAssetFile);
-                // Do something with the asset file here
+                // Load lap
                 LoadLap(currentAssetFile);
+
+                // Save currentAssetIndex externally so when it the scene reloads, it remembers.
+                //PlayerPrefs.SetInt(CounterKey, currentAssetIndex);
             }
             else
             {
@@ -172,6 +127,4 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
-
 }
-

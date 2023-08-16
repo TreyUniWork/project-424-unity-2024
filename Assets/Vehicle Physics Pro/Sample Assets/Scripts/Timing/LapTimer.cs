@@ -8,6 +8,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using VehiclePhysics.UI;
+using UnityEngine.SceneManagement; // AUT
 
 
 namespace VehiclePhysics.Timing
@@ -208,11 +209,13 @@ public class LapTimer : MonoBehaviour
 		Debug.Log("Completed Laps: " + m_laps.Count);
 
 			
-			
 		// Switch out lap to next asset file
 		simulationManager.SwitchOutLap();
-			
-	}
+
+		// reload scene after
+		//Scene scene = SceneManager.GetActiveScene();
+		//SceneManager.LoadScene(scene.name);
+		}
 
 
 	void SectorPass (int sector, float splitTime)

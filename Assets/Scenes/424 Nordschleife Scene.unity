@@ -11418,6 +11418,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 570963769}
     m_Modifications:
+    - target: {fileID: 2292733907331487657, guid: 8b88624d1f8e64345a093a515559c5bb,
+        type: 3}
+      propertyPath: timeScales.Array.size
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2292733907331487657, guid: 8b88624d1f8e64345a093a515559c5bb,
+        type: 3}
+      propertyPath: timeScales.Array.data[0]
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2292733907331487657, guid: 8b88624d1f8e64345a093a515559c5bb,
+        type: 3}
+      propertyPath: timeScales.Array.data[7]
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 2292733907331487658, guid: 8b88624d1f8e64345a093a515559c5bb,
         type: 3}
       propertyPath: underfloor
