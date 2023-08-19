@@ -4,6 +4,9 @@ namespace Perrinn424.Utilities
 {
     public class TimeScaleController : MonoBehaviour
     {
+        // AUT - Eirik
+        public float defaultRealtimeValue = 20.00f;
+
         [SerializeField]
         private float[] timeScales;
         private ClampedIterator<float> timeScalesIterator;
@@ -26,7 +29,7 @@ namespace Perrinn424.Utilities
                 throw new ArgumentException($"{nameof(timeScales)} must be sorted");
             }
 
-            realTimeIndex = Array.FindIndex(timeScales, e => e == 1.0f);
+            realTimeIndex = Array.FindIndex(timeScales, e => e == defaultRealtimeValue); // AUT - changed form 1.0f to defaultRealtimeValue
             if (realTimeIndex == -1)
             {
                 throw new ArgumentException($"{nameof(timeScales)} must contains at least one value = 1.0f (real time)");

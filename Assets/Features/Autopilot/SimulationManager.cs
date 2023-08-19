@@ -22,7 +22,7 @@ public class SimulationManager : MonoBehaviour
         // init lap
 
         // Load the current asset index value from PlayerPrefs
-        //currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
+        currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
 
         SwitchOutLap();
     }
@@ -70,7 +70,7 @@ public class SimulationManager : MonoBehaviour
                 LoadLap(currentAssetFile);
 
                 // Save currentAssetIndex externally so when it the scene reloads, it remembers.
-                //PlayerPrefs.SetInt(CounterKey, currentAssetIndex);
+                PlayerPrefs.SetInt(CounterKey, currentAssetIndex);
             }
             else
             {

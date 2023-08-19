@@ -206,15 +206,14 @@ public class LapTimer : MonoBehaviour
     	Debug.Log("Final Lap Time: " + m_lastTime);
 
 		// Print number of laps completed
-		Debug.Log("Completed Laps: " + m_laps.Count);
-
-			
-		// Switch out lap to next asset file
-		simulationManager.SwitchOutLap();
+		// Debug.Log("Completed Laps: " + m_laps.Count); // inaccurate because when scene reloads, the m_laps.Count resets
 
 		// reload scene after
-		//Scene scene = SceneManager.GetActiveScene();
-		//SceneManager.LoadScene(scene.name);
+		Scene scene = SceneManager.GetActiveScene();
+		SceneManager.LoadScene(scene.name);
+
+		// Switch out lap to next asset file
+		//simulationManager.SwitchOutLap();
 		}
 
 
