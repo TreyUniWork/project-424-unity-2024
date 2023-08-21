@@ -8,11 +8,13 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using VehiclePhysics.UI;
+// AUT
 using System.Text;
 using System.Collections;
 using System.Net.Sockets;
 using System.IO;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 
 
@@ -230,14 +232,14 @@ namespace VehiclePhysics.Timing
             Debug.Log("Final Lap Time: " + m_lastTime);
 
             // Print number of laps completed
-            Debug.Log("Completed Laps: " + m_laps.Count);
+            // Debug.Log("Completed Laps: " + m_laps.Count); // inaccurate because when scene reloads, the m_laps.Count resets
 
-            if (m_laps.Count % 2 == 0)
-            {
-                // send every 2nd lap time because each asset file runs 2 laps.
-                Debug.Log("Switch out lap, " + m_lastTime);
-                //simulationManager.SwitchOutLap();
-            }
+            // reload scene after
+            Scene scene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(scene.name);
+
+            // Switch out lap to next asset file
+            //simulationManager.SwitchOutLap();
         }
 
 
@@ -596,52 +598,52 @@ namespace VehiclePhysics.Timing
 
 
 
-public void SaveLapTime(float lapTime)
-{
-    // Add the current lap time to the list
-    m_laps.Add(lapTime);
-
-    // Check if 2 laps have been completed
-    if (m_laps.Count == 2)
-    {
-        // Get the path to the user's Downloads folder
-        string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-
-        int currentGeneration = 1;
-
-        // Determine the current generation by checking existing files.
-        while (File.Exists(Path.Combine(basePath, $"gen_{currentGeneration}.csv")))
+        public void SaveLapTime(float lapTime)
         {
-            var lineCount = File.ReadLines(Path.Combine(basePath, $"gen_{currentGeneration}.csv")).Count();
-            if (lineCount < 2) // If the current generation isn't full
-            {
-                break;
-            }
-            else
-            {
-                currentGeneration++;
-                currentCarNumber = 1; // Reset car number when we start a new generation file
-            }
+            // Add the current lap time to the list
+            m_laps.Add(lapTime);
+
+            // Check if 2 laps have been completed
+            //if (m_laps.Count == 2) // I commented out because we doing 1 lap instead of 2 - Eirik
+            //{
+                // Get the path to the user's Downloads folder
+                string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+                int currentGeneration = 1;
+
+                // Determine the current generation by checking existing files.
+                while (File.Exists(Path.Combine(basePath, $"gen_{currentGeneration}.csv")))
+                {
+                    var lineCount = File.ReadLines(Path.Combine(basePath, $"gen_{currentGeneration}.csv")).Count();
+                    if (lineCount < 2) // If the current generation isn't full
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        currentGeneration++;
+                        currentCarNumber = 1; // Reset car number when we start a new generation file
+                    }
+                }
+
+                string currentGenFile = Path.Combine(basePath, $"gen_{currentGeneration}.csv");
+                if (!File.Exists(currentGenFile))
+                {
+                    File.WriteAllText(currentGenFile, "CarNumber,LapTime\n"); // Headers for the CSV
+                }
+
+                // Write the lap times of the car to the CSV
+                foreach (float lap in m_laps)
+                {
+                    string csvLine = $"{currentCarNumber},{lap}";
+                    File.AppendAllLines(currentGenFile, new string[] { csvLine });
+                }
+
+                currentCarNumber++; // Increment for the next car
+
+                m_laps.Clear(); // Clear the laps for the next set
+            //}
         }
-
-        string currentGenFile = Path.Combine(basePath, $"gen_{currentGeneration}.csv");
-        if (!File.Exists(currentGenFile))
-        {
-            File.WriteAllText(currentGenFile, "CarNumber,LapTime\n"); // Headers for the CSV
-        }
-
-        // Write the lap times of the car to the CSV
-        foreach (float lap in m_laps)
-        {
-            string csvLine = $"{currentCarNumber},{lap}";
-            File.AppendAllLines(currentGenFile, new string[] { csvLine });
-        }
-
-        currentCarNumber++; // Increment for the next car
-
-        m_laps.Clear(); // Clear the laps for the next set
-    }
-}
 
 
 
