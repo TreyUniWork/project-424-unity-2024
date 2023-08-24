@@ -11,8 +11,8 @@ public class SimulationManager : MonoBehaviour
 {
     public Autopilot autopilot;
     private int maxAssetsPerGeneration = 5;
-    private int currentAssetIndex = 0;
-    private int currentGenerationIndex = -1; // Start with -1 to indicate no generation selected yet
+    public int currentAssetIndex { get; private set; } = 0;
+    public int currentGenerationIndex { get; private set; } = -1; // Start with -1 to indicate no generation selected yet
     private string basePath = "Assets/Resources/GeneticAssets";
     private const string CounterKey = "CurrentAssetIndex";
 
