@@ -601,7 +601,7 @@ namespace VehiclePhysics.Timing
         public void SaveLapTime(float lapTime)
         {
             // Add the current lap time to the list
-            m_laps.Add(lapTime);
+            //m_laps.Add(lapTime);
 
             // Check if 2 laps have been completed
             //if (m_laps.Count == 2) // I commented out because we doing 1 lap instead of 2 - Eirik
@@ -609,10 +609,12 @@ namespace VehiclePhysics.Timing
                 // Get the path to the user's Downloads folder
                 string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
-                int currentGeneration = 1;
+            //int currentGeneration = 1;
+                int currentGeneration = simulationManager.currentGenerationIndex + 1;
+                int currentCarNumber = simulationManager.currentAssetIndex;
 
                 // Determine the current generation by checking existing files.
-                while (File.Exists(Path.Combine(basePath, $"gen_{currentGeneration}.csv")))
+                /*while (File.Exists(Path.Combine(basePath, $"gen_{currentGeneration}.csv")))
                 {
                     var lineCount = File.ReadLines(Path.Combine(basePath, $"gen_{currentGeneration}.csv")).Count();
                     if (lineCount < 2) // If the current generation isn't full
@@ -625,6 +627,7 @@ namespace VehiclePhysics.Timing
                         currentCarNumber = 1; // Reset car number when we start a new generation file
                     }
                 }
+                */
 
                 string currentGenFile = Path.Combine(basePath, $"gen_{currentGeneration}.csv");
                 if (!File.Exists(currentGenFile))
@@ -639,7 +642,7 @@ namespace VehiclePhysics.Timing
                     File.AppendAllLines(currentGenFile, new string[] { csvLine });
                 }
 
-                currentCarNumber++; // Increment for the next car
+                //currentCarNumber++; // Increment for the next car
 
                 m_laps.Clear(); // Clear the laps for the next set
             //}
