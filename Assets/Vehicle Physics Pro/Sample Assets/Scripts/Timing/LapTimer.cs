@@ -98,7 +98,7 @@ namespace VehiclePhysics.Timing
 
         //Luke 
         //car number for csv file
-        private int currentCarNumber = 1; // Start from 1
+        //private int currentCarNumber = 1; // Start from 1
 
         void Start()
         {
@@ -640,6 +640,9 @@ namespace VehiclePhysics.Timing
                 {
                     string csvLine = $"{currentCarNumber},{lap}";
                     File.AppendAllLines(currentGenFile, new string[] { csvLine });
+                    LapTimeManager.AddLapTime(lap);
+                    Debug.Log("Laptime Saved to Array.");
+                    PrintLapTimes();
                 }
 
                 //currentCarNumber++; // Increment for the next car
@@ -647,7 +650,23 @@ namespace VehiclePhysics.Timing
                 m_laps.Clear(); // Clear the laps for the next set
             //}
         }
-
+        // by zack, printing the laptimes from the array.
+        public void PrintLapTimes()
+        {
+            if (LapTimeManager.lapTimes != null)
+            {
+                string lapTimesString = "Lap Times from array: ";
+                foreach (float lapTime in LapTimeManager.lapTimes)
+                {
+                    lapTimesString += lapTime + ", ";
+                }
+                Debug.Log(lapTimesString);
+            }
+            else
+            {
+                Debug.Log("Lap times array is null.");
+            }
+        }
 
 
     }
