@@ -16,4 +16,14 @@ public class LapTimeManager : MonoBehaviour
     {
         lapTimes.Clear();
     }
+
+    public static int GetLapCount()
+    {
+        return lapTimes.Count;
+    }
+
+    public static List<float> GetAllLapTimes()
+    {
+        return lapTimes;
+    }
 }

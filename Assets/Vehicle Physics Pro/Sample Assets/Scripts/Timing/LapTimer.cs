@@ -100,11 +100,14 @@ namespace VehiclePhysics.Timing
         //car number for csv file
         //private int currentCarNumber = 1; // Start from 1
 
+        Boolean initialized;
+
         void Start()
         {
             //Luke
             // Initialize the LapTimesWrapper with test data
             lapData = new LapTimesWrapper();
+            initialized = true;
         }
 
         void OnValidate()
@@ -600,34 +603,20 @@ namespace VehiclePhysics.Timing
 
         public void SaveLapTime(float lapTime)
         {
-            // Add the current lap time to the list
-            //m_laps.Add(lapTime);
+            if (!initialized) return;
+            // Add the current lap time to the LapTimeManager's array
+            LapTimeManager.AddLapTime(lapTime);
 
-            // Check if 2 laps have been completed
-            //if (m_laps.Count == 2) // I commented out because we doing 1 lap instead of 2 - Eirik
-            //{
+            // Check if all 5 laps have been completed
+            if (LapTimeManager.GetLapCount() == 2)
+            {
                 // Get the path to the user's Downloads folder
                 string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
-            //int currentGeneration = 1;
                 int currentGeneration = simulationManager.currentGenerationIndex + 1;
-                int currentCarNumber = simulationManager.currentAssetIndex;
 
-                // Determine the current generation by checking existing files.
-                /*while (File.Exists(Path.Combine(basePath, $"gen_{currentGeneration}.csv")))
-                {
-                    var lineCount = File.ReadLines(Path.Combine(basePath, $"gen_{currentGeneration}.csv")).Count();
-                    if (lineCount < 2) // If the current generation isn't full
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        currentGeneration++;
-                        currentCarNumber = 1; // Reset car number when we start a new generation file
-                    }
-                }
-                */
+                // Use the currentAssetIndex from simulationManager as the starting point 
+                int currentCarNumber = simulationManager.carNumber; // +1 to make it 1-indexed
 
                 string currentGenFile = Path.Combine(basePath, $"gen_{currentGeneration}.csv");
                 if (!File.Exists(currentGenFile))
@@ -636,20 +625,27 @@ namespace VehiclePhysics.Timing
                 }
 
                 // Write the lap times of the car to the CSV
-                foreach (float lap in m_laps)
+                foreach (float lap in LapTimeManager.GetAllLapTimes())
                 {
                     string csvLine = $"{currentCarNumber},{lap}";
                     File.AppendAllLines(currentGenFile, new string[] { csvLine });
-                    LapTimeManager.AddLapTime(lap);
-                    Debug.Log("Laptime Saved to Array.");
-                    PrintLapTimes();
+                    currentCarNumber++;
+                    //currentGeneration++;
                 }
 
-                //currentCarNumber++; // Increment for the next car
+                // Debug log the lap times from the LapTimeManager array
+                PrintLapTimes();
 
-                m_laps.Clear(); // Clear the laps for the next set
-            //}
+                // Clear the LapTimeManager lap times for the next set
+                LapTimeManager.ResetLapTimes();
+
+                // Increment current generation index for the next generation
+                simulationManager.IncrementGenerationIndex();
+            }
         }
+
+
+
         // by zack, printing the laptimes from the array.
         public void PrintLapTimes()
         {

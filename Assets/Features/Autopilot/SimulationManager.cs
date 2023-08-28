@@ -12,6 +12,7 @@ public class SimulationManager : MonoBehaviour
     public Autopilot autopilot;
     private int maxAssetsPerGeneration = 5;
     public int currentAssetIndex { get; private set; } = 0;
+    public int carNumber { get; private set; } = 1;
     public int currentGenerationIndex { get; private set; } = -1; // Start with -1 to indicate no generation selected yet
     private string basePath = "Assets/Resources/GeneticAssets";
     private const string CounterKey = "CurrentAssetIndex";
@@ -19,17 +20,40 @@ public class SimulationManager : MonoBehaviour
 
     private void Start()
     {
-        // init lap
+        if (!PlayerPrefs.HasKey("CurrentGenerationIndex"))
+        {
+            currentGenerationIndex = -1; // Initial value
+        }
+        else
+        {
+            currentGenerationIndex = PlayerPrefs.GetInt("CurrentGenerationIndex");
+        }
 
-        // Load the current asset index value from PlayerPrefs
+        Debug.Log("Start method called. Generation Index set to: " + currentGenerationIndex);
+
         currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
 
-        SwitchOutLap();
+        if (currentGenerationIndex == 0 && currentAssetIndex == 0)
+        {
+            SelectLatestGeneration();
+        }
+        else
+        {
+            SwitchOutLap();
+        }
     }
 
     public void SwitchOutLap()
     {
         SelectLatestGeneration();
+    }
+
+    public void IncrementGenerationIndex()
+    {
+        currentGenerationIndex++;
+        PlayerPrefs.SetInt("CurrentGenerationIndex", currentGenerationIndex);
+        PlayerPrefs.Save(); // Ensure the changes are saved immediately
+        Debug.Log("Incremented Generation Index to: " + currentGenerationIndex);
     }
 
     // selects the GEN* folder with the highest number
@@ -41,7 +65,7 @@ public class SimulationManager : MonoBehaviour
         {
             var sortedFolders = folderPaths.OrderByDescending(folderPath => GetGenerationNumber(folderPath));
 
-            currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
+            //currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
 
             CycleToNextAsset();
         }
@@ -59,6 +83,9 @@ public class SimulationManager : MonoBehaviour
         if (folderPaths.Length > 0 && currentGenerationIndex >= 0 && currentGenerationIndex < folderPaths.Length)
         {
             currentAssetIndex = (currentAssetIndex % maxAssetsPerGeneration) + 1;
+
+            // Increment carNumber and wrap it if it goes above 5
+            carNumber = (carNumber % maxAssetsPerGeneration) + 1;
 
             string currentGenerationFolder = folderPaths[currentGenerationIndex];
             string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"asset{currentAssetIndex}.asset");
