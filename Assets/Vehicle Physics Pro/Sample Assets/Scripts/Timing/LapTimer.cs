@@ -608,7 +608,7 @@ namespace VehiclePhysics.Timing
             LapTimeManager.AddLapTime(lapTime);
 
             // Check if all 5 laps have been completed
-            if (LapTimeManager.GetLapCount() == 2)
+            if (LapTimeManager.GetLapCount() == 5)
             {
                 // Get the path to the user's Downloads folder
                 string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");

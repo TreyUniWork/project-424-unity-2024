@@ -65,7 +65,7 @@ public class SimulationManager : MonoBehaviour
         {
             var sortedFolders = folderPaths.OrderByDescending(folderPath => GetGenerationNumber(folderPath));
 
-            //currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
+            currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
 
             CycleToNextAsset();
         }
