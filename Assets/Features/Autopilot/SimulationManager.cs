@@ -12,7 +12,7 @@ public class SimulationManager : MonoBehaviour
     public Autopilot autopilot;
     private int maxAssetsPerGeneration = 5;
     public int currentAssetIndex { get; private set; } = 0;
-    public int carNumber { get; private set; } = 1;
+    public int carNumber { get; private set; } = 0;
     public int currentGenerationIndex { get; private set; } = -1; // Start with -1 to indicate no generation selected yet
     private string basePath = "Assets/Resources/GeneticAssets";
     private const string CounterKey = "CurrentAssetIndex";
@@ -20,16 +20,6 @@ public class SimulationManager : MonoBehaviour
 
     private void Start()
     {
-        if (!PlayerPrefs.HasKey("CurrentGenerationIndex"))
-        {
-            currentGenerationIndex = -1; // Initial value
-        }
-        else
-        {
-            currentGenerationIndex = PlayerPrefs.GetInt("CurrentGenerationIndex");
-        }
-
-        Debug.Log("Start method called. Generation Index set to: " + currentGenerationIndex);
 
         currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
 
@@ -48,13 +38,6 @@ public class SimulationManager : MonoBehaviour
         SelectLatestGeneration();
     }
 
-    public void IncrementGenerationIndex()
-    {
-        currentGenerationIndex++;
-        PlayerPrefs.SetInt("CurrentGenerationIndex", currentGenerationIndex);
-        PlayerPrefs.Save(); // Ensure the changes are saved immediately
-        Debug.Log("Incremented Generation Index to: " + currentGenerationIndex);
-    }
 
     // selects the GEN* folder with the highest number
     private void SelectLatestGeneration()

@@ -604,21 +604,29 @@ namespace VehiclePhysics.Timing
         public void SaveLapTime(float lapTime)
         {
             if (!initialized) return;
+
             // Add the current lap time to the LapTimeManager's array
             LapTimeManager.AddLapTime(lapTime);
 
             // Check if all 5 laps have been completed
             if (LapTimeManager.GetLapCount() == 5)
             {
-                // Get the path to the user's Downloads folder
-                string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                // Get the base path
+                string basePath = "Assets/Resources/GeneticAssets"; // Using the base path from SimulationManager
 
                 int currentGeneration = simulationManager.currentGenerationIndex + 1;
 
                 // Use the currentAssetIndex from simulationManager as the starting point 
                 int currentCarNumber = simulationManager.carNumber; // +1 to make it 1-indexed
 
-                string currentGenFile = Path.Combine(basePath, $"gen_{currentGeneration}.csv");
+                // Create or find the folder for the current generation
+                string currentGenFolder = Path.Combine(basePath, $"GEN{currentGeneration}");
+                if (!Directory.Exists(currentGenFolder))
+                {
+                    Directory.CreateDirectory(currentGenFolder);
+                }
+
+                string currentGenFile = Path.Combine(currentGenFolder, $"gen{currentGeneration}.csv");
                 if (!File.Exists(currentGenFile))
                 {
                     File.WriteAllText(currentGenFile, "CarNumber,LapTime\n"); // Headers for the CSV
@@ -630,7 +638,6 @@ namespace VehiclePhysics.Timing
                     string csvLine = $"{currentCarNumber},{lap}";
                     File.AppendAllLines(currentGenFile, new string[] { csvLine });
                     currentCarNumber++;
-                    //currentGeneration++;
                 }
 
                 // Debug log the lap times from the LapTimeManager array
@@ -638,11 +645,11 @@ namespace VehiclePhysics.Timing
 
                 // Clear the LapTimeManager lap times for the next set
                 LapTimeManager.ResetLapTimes();
-
-                // Increment current generation index for the next generation
-                simulationManager.IncrementGenerationIndex();
             }
         }
+
+
+
 
 
 
