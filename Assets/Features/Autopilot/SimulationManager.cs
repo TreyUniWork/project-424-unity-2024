@@ -5,10 +5,12 @@ using Perrinn424.AutopilotSystem;
 using VehiclePhysics.Timing;
 using System.IO;
 using System.Linq;
+using UnityEngine.UI;
 
 
 public class SimulationManager : MonoBehaviour
 {
+    // for asset file stuff
     public Autopilot autopilot;
     private int maxAssetsPerGeneration = 5;
     public int currentAssetIndex { get; private set; } = 0;
@@ -17,10 +19,13 @@ public class SimulationManager : MonoBehaviour
     private string basePath = "Assets/Resources/GeneticAssets";
     private const string CounterKey = "CurrentAssetIndex";
 
+    // for ui
+    [SerializeField] public Text genNumberText;
+    [SerializeField] public Text carNumberText;
 
     private void Start()
     {
-
+        // init asset file
         currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
 
         if (currentGenerationIndex == 0 && currentAssetIndex == 0)
@@ -31,6 +36,13 @@ public class SimulationManager : MonoBehaviour
         {
             SwitchOutLap();
         }
+    }
+
+    private void Update()
+    {
+        // update ui
+        genNumberText.text = (currentGenerationIndex + 1) + "";
+        carNumberText.text = currentAssetIndex + "";
     }
 
     public void SwitchOutLap()
