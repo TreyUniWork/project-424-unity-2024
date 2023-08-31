@@ -71,7 +71,7 @@ public class SimulationManager : MonoBehaviour
             carNumber = (carNumber % maxAssetsPerGeneration) + 1;
 
             string currentGenerationFolder = folderPaths[currentGenerationIndex];
-            string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"asset{currentAssetIndex}.asset");
+            string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"gen{currentGenerationIndex + 1}asset{currentAssetIndex}.asset");
 
             if (File.Exists(currentAssetFile))
             {
