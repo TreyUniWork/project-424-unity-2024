@@ -38,11 +38,11 @@ def read_csv_laptimes(file_path):
         next(reader)  # Skip header row
         for row in reader:
             filename, laptime_str = row[0], row[1]
-            minutes, seconds_milliseconds = laptime_str.split(":")
-            seconds, milliseconds = seconds_milliseconds.split(".")
-            laptime = int(minutes) * 60 + int(seconds) + int(milliseconds) * 0.001
+            seconds, milliseconds = map(int, laptime_str.split("."))
+            laptime = seconds + milliseconds * 0.001
             lap_times[filename] = laptime
     return lap_times
+
 
 
 
