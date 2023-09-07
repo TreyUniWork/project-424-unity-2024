@@ -91,9 +91,9 @@ def run_genetic_algorithm():
 
         watch_for_csv(script_location)
 
-        csv_files = [file for file in os.listdir(script_location) if file.endswith('.csv')]
+        csv_files = [os.path.join(script_location, file) for file in os.listdir(script_location) if file.endswith('.csv')]
         latest_csv = max(csv_files, key=os.path.getctime)
-        lap_times = read_csv_laptimes(os.path.join(script_location, latest_csv))
+        lap_times = read_csv_laptimes(latest_csv)
         best_parents = sorted(lap_times, key=lap_times.get)[:2]
         print(f"Best parents for next generation are: {best_parents}")
 
