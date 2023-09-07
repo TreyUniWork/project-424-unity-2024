@@ -62,9 +62,11 @@ def on_created(event):
 def select_best_times(csv_file):
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
+        next(reader)  # skip header
         times = [(row[0], float(row[1])) for row in reader]
     times.sort(key=lambda x: x[1])
     return times[:2]
+
 
 class MyHandler(watchdog.events.FileSystemEventHandler):
     def on_created(self, event):
