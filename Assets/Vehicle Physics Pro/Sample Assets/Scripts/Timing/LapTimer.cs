@@ -612,7 +612,8 @@ namespace VehiclePhysics.Timing
             if (LapTimeManager.GetLapCount() == 5)
             {
                 // Get the base path
-                string basePath = "Assets/Resources/GeneticAssets"; // Using the base path from SimulationManager
+                //string basePath = "Assets/Resources/GeneticAssets"; // Using the base path from SimulationManager
+                string currentGenFolder = "Assets/Resources/script_runner"; // changed the path script runner for watchdog to read
 
                 int currentGeneration = simulationManager.currentGenerationIndex + 1;
 
@@ -620,13 +621,14 @@ namespace VehiclePhysics.Timing
                 int currentCarNumber = simulationManager.carNumber; // +1 to make it 1-indexed
 
                 // Create or find the folder for the current generation
-                string currentGenFolder = Path.Combine(basePath, $"GEN{currentGeneration}");
+                /*string currentGenFolder = Path.Combine(basePath, $"GEN{currentGeneration}");
                 if (!Directory.Exists(currentGenFolder))
                 {
                     Directory.CreateDirectory(currentGenFolder);
-                }
+                }*/
 
                 string currentGenFile = Path.Combine(currentGenFolder, $"gen{currentGeneration}.csv");
+
                 if (!File.Exists(currentGenFile))
                 {
                     File.WriteAllText(currentGenFile, "CarNumber,LapTime\n"); // Headers for the CSV
