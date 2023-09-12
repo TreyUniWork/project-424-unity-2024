@@ -6,6 +6,7 @@ using VehiclePhysics.Timing;
 using System.IO;
 using System.Linq;
 using UnityEngine.UI;
+using UnityEditor;
 
 
 public class SimulationManager : MonoBehaviour
@@ -87,6 +88,9 @@ public class SimulationManager : MonoBehaviour
 
             if (File.Exists(currentAssetFile))
             {
+                // refresh assetdatabase to get meta file
+                AssetDatabase.Refresh();
+
                 Debug.Log("Selected File: " + currentAssetFile);
                 // Load lap
                 LoadLap(currentAssetFile);
