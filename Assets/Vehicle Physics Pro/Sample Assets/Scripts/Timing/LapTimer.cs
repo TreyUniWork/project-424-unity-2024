@@ -615,7 +615,7 @@ namespace VehiclePhysics.Timing
                 //string basePath = "Assets/Resources/GeneticAssets"; // Using the base path from SimulationManager
                 string currentGenFolder = "Assets/Resources/script_runner"; // changed the path script runner for watchdog to read
 
-                int currentGeneration = simulationManager.currentGenerationIndex + 1;
+                int currentGeneration = simulationManager.currentGenerationNumber;
 
                 // Use the currentAssetIndex from simulationManager as the starting point 
                 int currentCarNumber = simulationManager.carNumber; // +1 to make it 1-indexed
