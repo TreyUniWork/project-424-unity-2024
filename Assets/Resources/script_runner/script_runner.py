@@ -61,12 +61,18 @@ def watch_for_csv(directory):
 
 def modify_parameter(param, value):
     limit = param_limits[param]
-    if param in ["rawThrottle", "rawBrake"]:
-        new_value = int(value * (1 + random.uniform(-0.2, 0.2)))
-    else:
-        new_value = value * (1 + random.uniform(-0.2, 0.2))
-    return max(limit[0], min(limit[1], new_value))
+    try:
+        mutation_percentage = float(entries[param].get()) / 100
+    except ValueError:
+        print(f"Invalid mutation percentage for {param}. Using 0%.")
+        mutation_percentage = 0
 
+    if param in ["rawThrottle", "rawBrake"]:
+        new_value = int(value * (1 + random.uniform(-mutation_percentage, mutation_percentage)))
+    else:
+        new_value = value * (1 + random.uniform(-mutation_percentage, mutation_percentage))
+
+    return max(limit[0], min(limit[1], new_value))
 
 def run_genetic_algorithm():
     base_input_file = input_file_entry.get()
@@ -119,7 +125,6 @@ input_file_label.pack()
 input_file_entry = tk.Entry(root)
 input_file_entry.pack()
 
-
 def browse_input_file():
     input_file_path = filedialog.askopenfilename()
     if input_file_path:
@@ -127,9 +132,20 @@ def browse_input_file():
         input_file_entry.delete(0, tk.END)
         input_file_entry.insert(0, input_file_path)
 
-
 browse_input_button = tk.Button(root, text="Browse", command=browse_input_file)
 browse_input_button.pack()
+
+# Add input boxes for each parameter's mutation percentage
+entries = {}
+entry_frame = tk.LabelFrame(root, text="Mutation Percentage for Parameters")
+entry_frame.pack(pady=20, padx=10, fill="x")
+
+for index, param in enumerate(param_limits):
+    tk.Label(entry_frame, text=f"{param}:").grid(row=index, column=0, sticky="w", padx=5)
+    entry = tk.Entry(entry_frame)
+    entry.grid(row=index, column=1, sticky="ew", padx=5)
+    entry.insert(0, "10")  # Default mutation percentage
+    entries[param] = entry
 
 run_genetic_algorithm_button = tk.Button(
     root, text="Run Genetic Algorithm", command=run_genetic_algorithm
