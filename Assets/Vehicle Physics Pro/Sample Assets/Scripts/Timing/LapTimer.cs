@@ -144,6 +144,7 @@ namespace VehiclePhysics.Timing
 
         void Update()
         {
+
             if (enableTestKeys)
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1)) DebugOnTimerHit(0, Time.fixedTime, 0.0f);
@@ -198,6 +199,15 @@ namespace VehiclePhysics.Timing
 #endif
         }
 
+
+        // New function to invalidate the lap because the vehicle stopped
+        public void InvalidateLapDueToStop()
+        {
+            Debug.Log("lap time set to high value");
+            // Setting the lap time to an arbitrarily high value (indicating an invalid lap for GA)
+            float invalidTime = 999999.0f;
+            NewLap(invalidTime);
+        }
 
         void NewLap(float t)
         {
