@@ -5,32 +5,30 @@ using Perrinn424.AutopilotSystem;
 using VehiclePhysics.Timing;
 using System.IO;
 using System.Linq;
+using UnityEngine.UI;
+using UnityEditor;
+using System;
 
 
 public class SimulationManager : MonoBehaviour
 {
+    // for asset file stuff
     public Autopilot autopilot;
     private int maxAssetsPerGeneration = 5;
     public int currentAssetIndex { get; private set; } = 0;
-    public int carNumber { get; private set; } = 1;
+    public int carNumber { get; private set; } = 0;
+    public int currentGenerationNumber { get; private set; } = -1; // different from index because the way the folders are sorted
     public int currentGenerationIndex { get; private set; } = -1; // Start with -1 to indicate no generation selected yet
     private string basePath = "Assets/Resources/GeneticAssets";
     private const string CounterKey = "CurrentAssetIndex";
 
+    // for ui
+    [SerializeField] public Text genNumberText;
+    [SerializeField] public Text carNumberText;
 
     private void Start()
     {
-        if (!PlayerPrefs.HasKey("CurrentGenerationIndex"))
-        {
-            currentGenerationIndex = -1; // Initial value
-        }
-        else
-        {
-            currentGenerationIndex = PlayerPrefs.GetInt("CurrentGenerationIndex");
-        }
-
-        Debug.Log("Start method called. Generation Index set to: " + currentGenerationIndex);
-
+        // init asset file
         currentAssetIndex = PlayerPrefs.GetInt(CounterKey, 0);
 
         if (currentGenerationIndex == 0 && currentAssetIndex == 0)
@@ -43,30 +41,46 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // update ui
+        genNumberText.text = (currentGenerationNumber) + "";
+        carNumberText.text = currentAssetIndex + "";
+    }
+
     public void SwitchOutLap()
     {
         SelectLatestGeneration();
     }
 
-    public void IncrementGenerationIndex()
-    {
-        currentGenerationIndex++;
-        PlayerPrefs.SetInt("CurrentGenerationIndex", currentGenerationIndex);
-        PlayerPrefs.Save(); // Ensure the changes are saved immediately
-        Debug.Log("Incremented Generation Index to: " + currentGenerationIndex);
-    }
 
     // selects the GEN* folder with the highest number
     private void SelectLatestGeneration()
     {
-        string[] folderPaths = Directory.GetDirectories(basePath, "GEN*");
+        int maxGeneration = -1;
+        string latestGenerationFolder = null;
 
-        if (folderPaths.Length > 0)
+        string[] folderPaths = Directory.GetDirectories(basePath);
+        currentGenerationNumber = folderPaths.Length;
+
+        foreach (string folderPath in folderPaths)
         {
-            var sortedFolders = folderPaths.OrderByDescending(folderPath => GetGenerationNumber(folderPath));
+            string folderName = System.IO.Path.GetFileName(folderPath);
 
-            //currentGenerationIndex = folderPaths.Length - 1; // Select the highest generation folder
+            // Check if the folder name starts with "GEN" and the rest is a number
+            if (folderName.StartsWith("GEN") && int.TryParse(folderName.Substring(3), out int generation))
+            {
+                if (generation > maxGeneration)
+                {
+                    maxGeneration = generation;
+                    latestGenerationFolder = folderPath;
+                }
+            }
+        }
 
+        if (!string.IsNullOrEmpty(latestGenerationFolder))
+        {
+            currentGenerationIndex = Array.IndexOf(folderPaths, latestGenerationFolder);
             CycleToNextAsset();
         }
         else
@@ -74,6 +88,7 @@ public class SimulationManager : MonoBehaviour
             Debug.Log("No generation folders found.");
         }
     }
+
 
     // selects the next asset in the folder
     private void CycleToNextAsset()
@@ -88,10 +103,13 @@ public class SimulationManager : MonoBehaviour
             carNumber = (carNumber % maxAssetsPerGeneration) + 1;
 
             string currentGenerationFolder = folderPaths[currentGenerationIndex];
-            string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"asset{currentAssetIndex}.asset");
+            string currentAssetFile = System.IO.Path.Combine(currentGenerationFolder, $"gen{currentGenerationNumber}asset{currentAssetIndex}.asset");
 
             if (File.Exists(currentAssetFile))
             {
+                // refresh assetdatabase to get meta file
+                AssetDatabase.Refresh();
+
                 Debug.Log("Selected File: " + currentAssetFile);
                 // Load lap
                 LoadLap(currentAssetFile);
