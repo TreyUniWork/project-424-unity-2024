@@ -7,6 +7,8 @@ public class ZeroSpeedDetector : MonoBehaviour
 
     private Rigidbody vehicleRb;
     private VehiclePhysics.Timing.LapTimer lapTimer;
+    private bool hasStarted = false;
+    private float delayTime = 1.0f; // Delay time in seconds
 
     private void Start()
     {
@@ -22,6 +24,16 @@ public class ZeroSpeedDetector : MonoBehaviour
     }
 
     private void Update()
+    {
+        // Check if the delay time has passed and the action hasn't started yet
+        if (!hasStarted && Time.time >= delayTime)
+        {
+            hasStarted = true; // Set the flag to indicate that the action has started
+            CheckSpeedAndReset();
+        }
+    }
+
+    private void CheckSpeedAndReset()
     {
         float currentSpeed = vehicleRb.velocity.magnitude;
 
