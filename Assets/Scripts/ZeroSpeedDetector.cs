@@ -26,9 +26,8 @@ public class ZeroSpeedDetector : MonoBehaviour
     private void Update()
     {
         // Check if the delay time has passed and the action hasn't started yet
-        if (!hasStarted && Time.time >= delayTime)
+        if (Time.time >= delayTime)
         {
-            hasStarted = true; // Set the flag to indicate that the action has started
             CheckSpeedAndReset();
         }
     }
