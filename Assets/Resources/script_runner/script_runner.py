@@ -61,50 +61,12 @@ def watch_for_csv(directory):
 
 def modify_parameter(param, value):
     limit = param_limits[param]
-    try:
-        mutation_percentage = float(entries[param].get()) / 100
-    except ValueError:
-        print(f"Invalid mutation percentage for {param}. Using 0%.")
-        mutation_percentage = 0
-
     if param in ["rawThrottle", "rawBrake"]:
-        new_value = int(value * (1 + random.uniform(-mutation_percentage, mutation_percentage)))
+        new_value = int(value * (1 + random.uniform(-0.2, 0.2)))
     else:
-        new_value = value * (1 + random.uniform(-mutation_percentage, mutation_percentage))
-
+        new_value = value * (1 + random.uniform(-0.2, 0.2))
     return max(limit[0], min(limit[1], new_value))
 
-
-def extract_params_from_content(content):
-    params = {}
-    lines = content.split("\n")
-    for line in lines:
-        for param in param_limits:
-            if line.strip().startswith(f"- {param}"):
-                value = float(line.split(":")[1].strip())
-                params[param] = value
-                break
-    return params
-
-
-def crossover_and_mutate(parent1_content, parent2_content):
-    parent1_params = extract_params_from_content(parent1_content)
-    parent2_params = extract_params_from_content(parent2_content)
-
-    child = {}
-    for param, limits in param_limits.items():
-        if random.uniform(0, 1) < 0.5:
-            value = parent1_params[param]
-        else:
-            value = parent2_params[param]
-        child[param] = modify_parameter(param, value)
-    return child
-
-def convert_params_to_content(params):
-    content = []
-    for param, value in params.items():
-        content.append(f"  - {param}: {value:.6f}")
-    return "\n".join(content)
 
 def run_genetic_algorithm():
     base_input_file = input_file_entry.get()
@@ -114,16 +76,11 @@ def run_genetic_algorithm():
 
     for generation in range(num_generations):
         output_folder = os.path.join(
-            script_location, "..", "GeneticAssets", f"GEN{generation + 1}"
+            script_location, "..", "GeneticAssets", f"GEN{generation+1}"
         )
         os.makedirs(output_folder, exist_ok=True)
-        if generation == 0:
-            current_generation = [base_input_content] * num_children
-        else:
-            current_generation = next_generation.copy()
 
-        for child_index, child_content in enumerate(current_generation):
-            lines = child_content.split("\n")
+        for child_index in range(num_children):
             modified_content = []
             for line in lines:
                 for param, limits in param_limits.items():
@@ -135,9 +92,8 @@ def run_genetic_algorithm():
                 else:
                     modified_content.append(line)
 
-            output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
+            output_file_name = f"gen{generation+1}asset{child_index+1}.asset"
             output_file_path = os.path.join(output_folder, output_file_name)
-            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
             with open(output_file_path, "w") as file:
                 file.write("\n".join(modified_content))
 
@@ -150,42 +106,34 @@ def run_genetic_algorithm():
         ]
         latest_csv = max(csv_files, key=os.path.getctime)
         lap_times = read_csv_laptimes(latest_csv)
-
-        best_parents_filenames = sorted(lap_times, key=lap_times.get)[:2]
-        best_parents_content = [load_base_input_file(filename) for filename in best_parents_filenames]
-        print(f"Best parents for next generation are: {best_parents_filenames}")
-
-        next_generation = []
-        for _ in range(num_children):
-            child_params = crossover_and_mutate(best_parents_content[0], best_parents_content[1])
-            child_content = convert_params_to_content(child_params)
-            next_generation.append(child_content)
+        best_parents = sorted(lap_times, key=lap_times.get)[:2]
+        print(f"Best parents for next generation are: {best_parents}")
 
 
-# GUI setup
+# GUI
 root = tk.Tk()
-root.title("Genetic Algorithm for Asset File Generation")
+root.title("Genetic Algorithm for Input File Generation")
 
-frame = tk.Frame(root)
-frame.pack(padx=10, pady=10)
+input_file_label = tk.Label(root, text="Select Base Input File:")
+input_file_label.pack()
+input_file_entry = tk.Entry(root)
+input_file_entry.pack()
 
-load_button = tk.Button(frame, text="Load Base Input File",
-                        command=lambda: input_file_entry.insert(0, filedialog.askopenfilename()))
-load_button.grid(row=0, column=0, padx=5, pady=5)
 
-input_file_entry = tk.Entry(frame, width=50)
-input_file_entry.grid(row=0, column=1, padx=5, pady=5)
+def browse_input_file():
+    input_file_path = filedialog.askopenfilename()
+    if input_file_path:
+        print(f"Selected input file: {input_file_path}")
+        input_file_entry.delete(0, tk.END)
+        input_file_entry.insert(0, input_file_path)
 
-run_button = tk.Button(frame, text="Run Genetic Algorithm", command=run_genetic_algorithm)
-run_button.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
 
-entries = {}
-for index, (param, limits) in enumerate(param_limits.items()):
-    label = tk.Label(frame, text=f"{param} mutation %:")
-    label.grid(row=index + 2, column=0, padx=5, pady=5)
+browse_input_button = tk.Button(root, text="Browse", command=browse_input_file)
+browse_input_button.pack()
 
-    entry = tk.Entry(frame)
-    entry.grid(row=index + 2, column=1, padx=5, pady=5)
-    entries[param] = entry
+run_genetic_algorithm_button = tk.Button(
+    root, text="Run Genetic Algorithm", command=run_genetic_algorithm
+)
+run_genetic_algorithm_button.pack()
 
 root.mainloop()
