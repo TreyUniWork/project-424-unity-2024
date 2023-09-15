@@ -62,9 +62,9 @@ def watch_for_csv(directory):
 def modify_parameter(param, value):
     limit = param_limits[param]
     if param in ["rawThrottle", "rawBrake"]:
-        new_value = int(value * (1 + random.uniform(-0.2, 0.2)))
+        new_value = int(value * (1 + random.uniform(-2, 2)))
     else:
-        new_value = value * (1 + random.uniform(-0.2, 0.2))
+        new_value = value * (1 + random.uniform(-2, 2))
     return max(limit[0], min(limit[1], new_value))
 
 
