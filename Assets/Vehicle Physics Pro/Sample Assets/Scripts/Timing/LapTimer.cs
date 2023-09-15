@@ -205,7 +205,7 @@ namespace VehiclePhysics.Timing
         {
             Debug.Log("lap time set to high value");
             // Setting the lap time to an arbitrarily high value (indicating an invalid lap for GA)
-            float invalidTime = 999999.0f;
+            float invalidTime = 999.11f;
             NewLap(invalidTime);
         }
 
