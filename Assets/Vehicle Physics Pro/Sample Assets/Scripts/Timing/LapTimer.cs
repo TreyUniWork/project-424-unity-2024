@@ -641,13 +641,13 @@ namespace VehiclePhysics.Timing
 
                 if (!File.Exists(currentGenFile))
                 {
-                    File.WriteAllText(currentGenFile, "CarNumber,LapTime\n"); // Headers for the CSV
+                    File.WriteAllText(currentGenFile, "FileName,LapTime\n"); // Headers for the CSV
                 }
 
                 // Write the lap times of the car to the CSV
                 foreach (float lap in LapTimeManager.GetAllLapTimes())
                 {
-                    string csvLine = $"{currentCarNumber},{lap}";
+                    string csvLine = $"../GeneticAssets/GEN{currentGeneration}/gen{currentGeneration}asset{currentCarNumber}.asset,{lap}";
                     File.AppendAllLines(currentGenFile, new string[] { csvLine });
                     currentCarNumber++;
                 }
