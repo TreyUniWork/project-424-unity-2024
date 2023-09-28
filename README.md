@@ -53,7 +53,7 @@ We have implemented an algorithm to optimize lap times for the PERRINN 424 hyper
      ```
      Assets\Resources\script_runner\csv grapher.py
      ```
-   - Ensure that you move all the output CSV files (e.g., gen1.csv, gen2.csv, etc.) into their respective folders for analysis.
+   - Ensure that you move all the output CSV files (e.g., gen1.csv, gen2.csv, etc.) all into one folder for the tool the tool to read.
 
 By following these steps, you can use the laptime optimization algorithm to improve the performance of the PERRINN 424 hypercar in the simulation.
 
