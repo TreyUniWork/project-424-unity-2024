@@ -2,7 +2,7 @@
 ## Before You Begin
 Before you proceed with setting up and using the laptime optimization algorithm, please ensure that you have the project itself properly installed. Detailed instructions on how to set up the project can be found starting from the [Project 424](#project-424) section.
 
-Once you have successfully installed the project, you can follow the instructions in the [Algorithm Requirements](##Algorithm-Requirements) section below to install the necessary Python dependencies for the laptime optimization algorithm.
+Once you have successfully installed the project, you can follow the instructions in the [Algorithm Requirements](#Algorithm-Requirements) section below to install the necessary Python dependencies for the laptime optimization algorithm.
 
 ## Algorithm Requirements
 
