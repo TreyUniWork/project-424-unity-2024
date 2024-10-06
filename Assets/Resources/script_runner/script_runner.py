@@ -309,19 +309,27 @@ def run_genetic_algorithm():
 
         current_generation = [base_input_content] * num_children
 
-# YOU CAN LIMIT THE AMOUNT OF THREADS HERE (FOR CPU USAGE)
-        # Use ThreadPoolExecutor for concurrent execution
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = []
-        
-           # Submit tasks for each child to the executor
-            for child_index, child_content in enumerate(current_generation):
-                futures.append(executor.submit(simulate_child, child_index, child_content, output_folder, generation))
+# Iterate through each child in the current generation
+        for child_index, child_content in enumerate(current_generation):
+            print(f"Child {child_index+1}")
+            lines = child_content.split("\n")
+            modified_content = []
 
-            # Wait for all simulations to complete
-            for future in concurrent.futures.as_completed(futures):
-                future.result()  # This will raise any exceptions that occurred during execution
-        time.sleep(5)
+            # Skip modification for the first child (child_index == 0)
+            if child_index == 0:
+                modified_content = lines
+            else:
+                # Modify parameters within the child's content
+                modified_content = modify_params(lines)
+                print(f"Modified child {child_index + 1} content")
+
+            # Generate an output file name for each child and write the modified content to a file
+            output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
+            output_file_path = os.path.join(output_folder, output_file_name)
+            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+            with open(output_file_path, "w") as file:
+                file.write("\n".join(modified_content))
+            print(f"Created output file: {output_file_path}")
 
         # Call a function to watch for CSV files
         watch_for_csv(script_location) 
