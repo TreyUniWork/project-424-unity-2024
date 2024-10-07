@@ -6,11 +6,6 @@ import csv
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# PARALLEL_PROCESSING_TESTING
-import concurrent.futures
-
-# CPU RECOVERY REASONS
-import time 
 
 # Define the genetic algorithm parameters
 num_children = 5
@@ -21,7 +16,7 @@ param_limits = {
     "throttle": (0, 100),  # float
     "brakePressure": (0, 100),  # float
     "steeringAngle": (0, 300),
-    "rawSteer": (0,300),
+    "rawSteer": (0, 300),
 }
 
 # The maximum percentage difference the param can change by
@@ -32,7 +27,7 @@ param_modification_limits = {
     "throttle": (-0.05, 0.05),
     "brakePressure": (-0.05, 0.05),
     "steeringAngle": (-0.05, 0.05),
-    "rawSteer": (-0.05, 0.05), 
+    "rawSteer": (-0.05, 0.05),
 }
 
 
@@ -52,7 +47,8 @@ def load_base_input_file(file_path):
     script_directory = os.path.dirname(
         os.path.abspath(__file__)
     )  # Get the absolute path of the script's directory
-    target_file_path = os.path.abspath(os.path.join(script_directory, file_path))
+    target_file_path = os.path.abspath(
+        os.path.join(script_directory, file_path))
 
     print(f"Loading base input file from: {target_file_path}")
 
@@ -95,19 +91,24 @@ def modify_params(lines):
 
     # rawThrottle
     min_raw_throttle_mod, max_raw_throttle_mod = param_modification_limits["rawThrottle"]
-    new_raw_throttle_multi = random.uniform(min_raw_throttle_mod, max_raw_throttle_mod)
+    new_raw_throttle_multi = random.uniform(
+        min_raw_throttle_mod, max_raw_throttle_mod)
 
     # throttle
     min_throttle_mod, max_throttle_mod = param_modification_limits["throttle"]
     new_throttle_multi = random.uniform(min_throttle_mod, max_throttle_mod)
 
     # brakePressure
-    min_brake_pressure_mod, max_brake_pressure_mod = param_modification_limits["brakePressure"]
-    new_brake_pressure_multi = random.uniform(min_brake_pressure_mod, max_brake_pressure_mod)
+    min_brake_pressure_mod, max_brake_pressure_mod = param_modification_limits[
+        "brakePressure"]
+    new_brake_pressure_multi = random.uniform(
+        min_brake_pressure_mod, max_brake_pressure_mod)
 
     # steeringAngle
-    min_steering_angle_mod, max_steering_angle_mod = param_modification_limits["steeringAngle"]
-    new_steering_angle_multi = random.uniform(min_steering_angle_mod, max_steering_angle_mod)
+    min_steering_angle_mod, max_steering_angle_mod = param_modification_limits[
+        "steeringAngle"]
+    new_steering_angle_multi = random.uniform(
+        min_steering_angle_mod, max_steering_angle_mod)
 
     # rawSteer
     min_raw_steer_mod, max_raw_steer_mod = param_modification_limits["rawSteer"]
@@ -160,26 +161,30 @@ def modify_params(lines):
             brake_pressure = float(brake_pressure_str)
             if "brakePressure" in param_limits:
                 min_limit, max_limit = param_limits["brakePressure"]
-                new_brake_pressure = brake_pressure * (1 + new_brake_pressure_multi)
+                new_brake_pressure = brake_pressure * \
+                    (1 + new_brake_pressure_multi)
                 if new_brake_pressure < min_limit:
                     new_brake_pressure = min_limit
                 elif new_brake_pressure > max_limit:
                     new_brake_pressure = max_limit
 
-            modified_lines.append(f"    brakePressure: {new_brake_pressure:.2f}")
+            modified_lines.append(
+                f"    brakePressure: {new_brake_pressure:.2f}")
         # Adjust steeringAngle
         elif stripped_line.startswith("steeringAngle:"):
             steering_angle_str = stripped_line.split(":")[1].strip()
             steering_angle = float(steering_angle_str)
             if "steeringAngle" in param_limits:
                 min_limit, max_limit = param_limits["steeringAngle"]
-                new_steering_angle = steering_angle * (1 + new_steering_angle_multi)
+                new_steering_angle = steering_angle * \
+                    (1 + new_steering_angle_multi)
                 if new_steering_angle < min_limit:
                     new_steering_angle = min_limit
                 elif new_steering_angle > max_limit:
                     new_steering_angle = max_limit
 
-            modified_lines.append(f"    steeringAngle: {new_steering_angle:.2f}")
+            modified_lines.append(
+                f"    steeringAngle: {new_steering_angle:.2f}")
         # Adjust rawSteer
         elif stripped_line.startswith("rawSteer:"):
             raw_steer_str = stripped_line.split(":")[1].strip()
@@ -199,35 +204,39 @@ def modify_params(lines):
     return modified_lines
 
 # TO WRITE CSV FILES
+
+
 def write_lap_times_to_csv(output_folder, generation, child_index, laptime):
-    csv_file = os.path.join(output_folder, f"generation_{generation+1}_lap_times.csv")
+    csv_file = os.path.join(
+        output_folder, f"generation_{generation+1}_lap_times.csv")
     file_exists = os.path.isfile(csv_file)
-    
+
     with open(csv_file, "a", newline="") as file:
         writer = csv.writer(file)
         if not file_exists:
             writer.writerow(["Child", "LapTime"])
-        writer.writerow([f"gen{generation + 1}_child{child_index + 1}.asset", laptime])
-
+        writer.writerow(
+            [f"gen{generation + 1}_child{child_index + 1}.asset", laptime])
 
 
 # THIS WILL SUPPOSEDLY HANDLE THE SIMULATIONS FOR EACH CHILD
 def simulate_child(child_index, child_content, output_folder, generation):
     print(f"Simulating Child {child_index + 1}")
     lines = child_content.split("\n")
-    
+
     # Modify parameters for the child
     modified_content = modify_params(lines) if child_index > 0 else lines
-    
+
     # Generate output file name
     output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
     output_file_path = os.path.join(output_folder, output_file_name)
-    
+
     # Write modified content to a file
     with open(output_file_path, "w") as file:
         file.write("\n".join(modified_content))
-    
+
     print(f"Created output file: {output_file_path}")
+
 
 # MUTATION LOGIC
 def crossover_and_mutate(parent1_content, parent2_content):
@@ -246,13 +255,17 @@ def crossover_and_mutate(parent1_content, parent2_content):
     # Mutation
     for param in param_limits.keys():
         if random.random() < 0.1:  # 10% chance to mutate
-            child_params[param] += random.uniform(param_modification_limits[param][0], param_modification_limits[param][1])
+            child_params[param] += random.uniform(
+                param_modification_limits[param][0], param_modification_limits[param][1])
             # Ensure it stays within limits
-            child_params[param] = max(param_limits[param][0], min(param_limits[param][1], child_params[param]))
+            child_params[param] = max(param_limits[param][0], min(
+                param_limits[param][1], child_params[param]))
 
     return child_params
 
 # TO EXTRACT THE PARAMETERS
+
+
 def extract_params(content):
     params = {}
     for line in content.splitlines():
@@ -271,16 +284,19 @@ def extract_params(content):
     return params
 
 # HELPER FUNCTION
+
+
 def convert_params_to_content(params):
     content_lines = []
     content_lines.append("- speed: {:.2f}".format(params["speed"]))
     content_lines.append("  rawThrottle: {:.2f}".format(params["rawThrottle"]))
     content_lines.append("  throttle: {:.2f}".format(params["throttle"]))
-    content_lines.append("  brakePressure: {:.2f}".format(params["brakePressure"]))
-    content_lines.append("  steeringAngle: {:.2f}".format(params["steeringAngle"]))
+    content_lines.append(
+        "  brakePressure: {:.2f}".format(params["brakePressure"]))
+    content_lines.append(
+        "  steeringAngle: {:.2f}".format(params["steeringAngle"]))
     content_lines.append("  rawSteer: {:.2f}".format(params["rawSteer"]))
     return "\n".join(content_lines)
-
 
 
 # Define a function to run the genetic algorithm
@@ -292,24 +308,23 @@ def run_genetic_algorithm():
     base_input_content = load_base_input_file(base_input_file)
 
     # Split the input content into lines
-    # lines = base_input_content.split("\n")
+    lines = base_input_content.split("\n")
 
     # Get the directory where the script is located
     script_location = os.path.dirname(os.path.abspath(__file__))
 
-
-# MADE AN ADJUSTMENT HERE
-        # Iterate through each child in the current generation
+    # Iterate through each child in the current generation
     for generation in range(num_generations):
         print(f"Generation {generation + 1}:")
 
-        output_folder = os.path.join(script_location, "..", "GeneticAssets", f"GEN{generation + 1}")
+        output_folder = os.path.join(
+            script_location, "..", "GeneticAssets", f"GEN{generation + 1}")
         os.makedirs(output_folder, exist_ok=True)
         print(f"Created output folder: {output_folder}")
 
         current_generation = [base_input_content] * num_children
 
-# Iterate through each child in the current generation
+        # Iterate through each child in the current generation
         for child_index, child_content in enumerate(current_generation):
             print(f"Child {child_index+1}")
             lines = child_content.split("\n")
@@ -332,9 +347,7 @@ def run_genetic_algorithm():
             print(f"Created output file: {output_file_path}")
 
         # Call a function to watch for CSV files
-        watch_for_csv(script_location) 
-        # COMMENTED IT OUT FOR INITIAL TEST RUN
-        print("Watching for CSV files...")
+        watch_for_csv(script_location)
 
         # Scan the script's directory for CSV files and select the latest one
         csv_files = [
@@ -373,7 +386,8 @@ def run_genetic_algorithm():
         ]
 
         # # Print the names of the best parents for the next generation
-        print(f"Best parents for next generation are: {best_parents_filenames}")
+        print(
+            f"Best parents for next generation are: {best_parents_filenames}")
 
         # # Create a new next generation by performing crossover and mutation on the best parents' content
         next_generation = []
