@@ -21,6 +21,8 @@ param_limits = {
 
 # The maximum percentage difference the param can change by
 # First number = min, second = max
+
+# MUTATION RATE
 param_modification_limits = {
     "speed": (-0.05, 0.05),
     "rawThrottle": (-0.05, 0.05),
@@ -44,9 +46,8 @@ class CSVHandler(FileSystemEventHandler):
 
 
 def load_base_input_file(file_path):
-    script_directory = os.path.dirname(
-        os.path.abspath(__file__)
-    )  # Get the absolute path of the script's directory
+    # Get the absolute path of the script's directory
+    script_directory = os.path.dirname(os.path.abspath(__file__))
     target_file_path = os.path.abspath(
         os.path.join(script_directory, file_path))
 
@@ -205,6 +206,8 @@ def modify_params(lines):
 
 # TO WRITE CSV FILES
 
+# THIS ISN'T BEING CALLED IN THE CODE
+
 
 def write_lap_times_to_csv(output_folder, generation, child_index, laptime):
     csv_file = os.path.join(
@@ -218,8 +221,10 @@ def write_lap_times_to_csv(output_folder, generation, child_index, laptime):
         writer.writerow(
             [f"gen{generation + 1}_child{child_index + 1}.asset", laptime])
 
-
+# THIS IS ALSO NOT CALLED IN THE CURRENT CODE
 # THIS WILL SUPPOSEDLY HANDLE THE SIMULATIONS FOR EACH CHILD
+
+
 def simulate_child(child_index, child_content, output_folder, generation):
     print(f"Simulating Child {child_index + 1}")
     lines = child_content.split("\n")
@@ -338,6 +343,7 @@ def run_genetic_algorithm():
                 modified_content = modify_params(lines)
                 print(f"Modified child {child_index + 1} content")
 
+            # THIS IS WHAT IS CREATING THE ASSET FILES
             # Generate an output file name for each child and write the modified content to a file
             output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
             output_file_path = os.path.join(output_folder, output_file_name)
