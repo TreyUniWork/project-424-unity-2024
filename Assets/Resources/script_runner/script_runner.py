@@ -361,13 +361,13 @@ def run_genetic_algorithm():
             for file in os.listdir(script_location)
             if file.endswith(".csv")
         ]
+        if not csv_files:
+            print("No CSV files found!")
+            return
         latest_csv = max(csv_files, key=os.path.getctime)
         print(
             f"Selected latest CSV file: {latest_csv} (Shouldn't take long so close if it's frozen)"
         )
-        if not csv_files:
-            print("No CSV files found!")
-            return
 
         # Read lap times from the selected CSV file
         lap_times = {}
