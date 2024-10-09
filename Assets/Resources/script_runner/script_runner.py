@@ -9,7 +9,7 @@ from watchdog.events import FileSystemEventHandler
 
 # Define the genetic algorithm parameters
 num_children = 5
-num_generations = 30
+num_generations = 10
 param_limits = {
     "speed": (0, 100),  # float
     "rawThrottle": (0, 10000),  # int
@@ -80,6 +80,7 @@ def watch_for_csv(directory):
     event_handler = CSVHandler(observer)
     observer.schedule(event_handler, directory, recursive=False)
     observer.start()
+    observer.join()
 
 
 def modify_params(lines):
