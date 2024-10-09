@@ -78,25 +78,6 @@ def modify_params(lines):
     modified_lines = []
 
     # Init multipliers
-    # speed
-    min_speed_mod, max_speed_mod = param_modification_limits["speed"]
-    new_speed_multi = random.uniform(min_speed_mod, max_speed_mod)
-
-    # rawThrottle
-    min_raw_throttle_mod, max_raw_throttle_mod = param_modification_limits["rawThrottle"]
-    new_raw_throttle_multi = random.uniform(
-        min_raw_throttle_mod, max_raw_throttle_mod)
-
-    # throttle
-    min_throttle_mod, max_throttle_mod = param_modification_limits["throttle"]
-    new_throttle_multi = random.uniform(min_throttle_mod, max_throttle_mod)
-
-    # brakePressure
-    min_brake_pressure_mod, max_brake_pressure_mod = param_modification_limits[
-        "brakePressure"]
-    new_brake_pressure_multi = random.uniform(
-        min_brake_pressure_mod, max_brake_pressure_mod)
-
     # steeringAngle
     min_steering_angle_mod, max_steering_angle_mod = param_modification_limits[
         "steeringAngle"]
@@ -109,62 +90,8 @@ def modify_params(lines):
 
     for line in lines:
         stripped_line = line.strip()
-        # Adjust speed
-        if stripped_line.startswith("- speed:"):
-            speed_str = stripped_line.split(":")[1].strip()
-            speed = float(speed_str)
-            new_speed = speed * (1 + new_speed_multi)
-            if "speed" in param_limits:
-                min_limit, max_limit = param_limits["speed"]
-                if new_speed < min_limit:
-                    new_speed = min_limit
-                elif new_speed > max_limit:
-                    new_speed = max_limit
-
-            modified_lines.append(f"  - speed: {new_speed:.2f}")
-        # Adjust rawThrottle
-        elif stripped_line.startswith("rawThrottle:"):
-            raw_throttle_str = line.split(":")[1].strip()
-            raw_throttle = float(raw_throttle_str)
-            new_raw_throttle = raw_throttle * (1 + new_raw_throttle_multi)
-            if "rawThrottle" in param_limits:
-                min_limit, max_limit = param_limits["rawThrottle"]
-                if new_raw_throttle < min_limit:
-                    new_raw_throttle = min_limit
-                elif new_raw_throttle > max_limit:
-                    new_raw_throttle = max_limit
-
-            modified_lines.append(f"    rawThrottle: {new_raw_throttle:.2f}")
-        # Adjust throttle
-        elif stripped_line.startswith("throttle:"):
-            throttle_str = stripped_line.split(":")[1].strip()
-            throttle = float(throttle_str)
-            if "throttle" in param_limits:
-                min_limit, max_limit = param_limits["throttle"]
-                new_throttle = throttle * (1 + new_throttle_multi)
-                if new_throttle < min_limit:
-                    new_throttle = min_limit
-                elif new_throttle > max_limit:
-                    new_throttle = max_limit
-
-            modified_lines.append(f"    throttle: {new_throttle:.2f}")
-        # Adjust brakePressure
-        elif stripped_line.startswith("brakePressure:"):
-            brake_pressure_str = stripped_line.split(":")[1].strip()
-            brake_pressure = float(brake_pressure_str)
-            if "brakePressure" in param_limits:
-                min_limit, max_limit = param_limits["brakePressure"]
-                new_brake_pressure = brake_pressure * \
-                    (1 + new_brake_pressure_multi)
-                if new_brake_pressure < min_limit:
-                    new_brake_pressure = min_limit
-                elif new_brake_pressure > max_limit:
-                    new_brake_pressure = max_limit
-
-            modified_lines.append(
-                f"    brakePressure: {new_brake_pressure:.2f}")
         # Adjust steeringAngle
-        elif stripped_line.startswith("steeringAngle:"):
+        if stripped_line.startswith("steeringAngle:"):
             steering_angle_str = stripped_line.split(":")[1].strip()
             steering_angle = float(steering_angle_str)
             if "steeringAngle" in param_limits:
@@ -266,15 +193,7 @@ def crossover_and_mutate(parent1_content, parent2_content):
 def extract_params(content):
     params = {}
     for line in content.splitlines():
-        if "speed:" in line:
-            params["speed"] = float(line.split(":")[1].strip())
-        elif "rawThrottle:" in line:
-            params["rawThrottle"] = float(line.split(":")[1].strip())
-        elif "throttle:" in line:
-            params["throttle"] = float(line.split(":")[1].strip())
-        elif "brakePressure:" in line:
-            params["brakePressure"] = float(line.split(":")[1].strip())
-        elif "steeringAngle:" in line:
+        if "steeringAngle:" in line:
             params["steeringAngle"] = float(line.split(":")[1].strip())
         elif "rawSteer:" in line:
             params["rawSteer"] = float(line.split(":")[1].strip())
@@ -285,11 +204,6 @@ def extract_params(content):
 
 def convert_params_to_content(params):
     content_lines = []
-    content_lines.append("- speed: {:.2f}".format(params["speed"]))
-    content_lines.append("  rawThrottle: {:.2f}".format(params["rawThrottle"]))
-    content_lines.append("  throttle: {:.2f}".format(params["throttle"]))
-    content_lines.append(
-        "  brakePressure: {:.2f}".format(params["brakePressure"]))
     content_lines.append(
         "  steeringAngle: {:.2f}".format(params["steeringAngle"]))
     content_lines.append("  rawSteer: {:.2f}".format(params["rawSteer"]))
