@@ -253,14 +253,14 @@ def crossover_and_mutate(parent1_content, parent2_content):
     # Simple crossover logic (mix parameters)
     child_params = {}
     for param in param_limits.keys():
-        if random.random() < 0.5:  # 50% chance to take from parent 1 or parent 2
+        if random.random() < 0.6:  # 60% chance to take from parent 1 or parent 2
             child_params[param] = parent1_params[param]
         else:
             child_params[param] = parent2_params[param]
 
     # Mutation
     for param in param_limits.keys():
-        if random.random() < 0.1:  # 10% chance to mutate
+        if random.random() < 0.05:  # 5% chance to mutate
             child_params[param] += random.uniform(
                 param_modification_limits[param][0], param_modification_limits[param][1])
             # Ensure it stays within limits
