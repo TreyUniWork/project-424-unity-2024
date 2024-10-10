@@ -260,7 +260,7 @@ def crossover_and_mutate(parent1_content, parent2_content):
 
     # Mutation
     for param in param_limits.keys():
-        if random.random() < 0.05:  # 5% chance to mutate
+        if random.random() < 0.2:  # 20% chance to mutate
             child_params[param] += random.uniform(
                 param_modification_limits[param][0], param_modification_limits[param][1])
             # Ensure it stays within limits
