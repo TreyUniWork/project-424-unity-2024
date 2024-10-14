@@ -9,7 +9,7 @@ from watchdog.events import FileSystemEventHandler
 
 # Define the genetic algorithm parameters
 num_children = 5
-num_generations = 30
+num_generations = 10
 param_limits = {
     "speed": (0, 100),  # float
     "rawThrottle": (0, 10000),  # int
@@ -28,8 +28,8 @@ param_modification_limits = {
     "rawThrottle": (-0.05, 0.05),
     "throttle": (-0.05, 0.05),
     "brakePressure": (-0.05, 0.05),
-    "steeringAngle": (-0.1, 0.1),
-    "rawSteer": (-0.1, 0.1),
+    "steeringAngle": (-0.05, 0.05),
+    "rawSteer": (-0.05, 0.05),
 }
 
 
@@ -83,127 +83,93 @@ def watch_for_csv(directory):
     observer.join()
 
 
+# Dynamic steeringAngle and rawSteer based on speed
+def get_dynamic_steering_mod(speed, param_name):
+    if speed < 40:
+        return random.uniform(-0.15, 0.15)
+    elif 40 <= speed <= 80:
+        return random.uniform(*param_modification_limits[param_name])
+    else:
+        return random.uniform(-0.05, 0.05)
+
 def modify_params(lines):
     modified_lines = []
 
-    # Init multipliers
-    # speed
-    min_speed_mod, max_speed_mod = param_modification_limits["speed"]
-    new_speed_multi = random.uniform(min_speed_mod, max_speed_mod)
-
-    # rawThrottle
-    min_raw_throttle_mod, max_raw_throttle_mod = param_modification_limits["rawThrottle"]
-    new_raw_throttle_multi = random.uniform(
-        min_raw_throttle_mod, max_raw_throttle_mod)
-
-    # throttle
-    min_throttle_mod, max_throttle_mod = param_modification_limits["throttle"]
-    new_throttle_multi = random.uniform(min_throttle_mod, max_throttle_mod)
-
-    # brakePressure
-    min_brake_pressure_mod, max_brake_pressure_mod = param_modification_limits[
-        "brakePressure"]
-    new_brake_pressure_multi = random.uniform(
-        min_brake_pressure_mod, max_brake_pressure_mod)
-
-    # steeringAngle
-    min_steering_angle_mod, max_steering_angle_mod = param_modification_limits[
-        "steeringAngle"]
-    new_steering_angle_multi = random.uniform(
-        min_steering_angle_mod, max_steering_angle_mod)
-
-    # rawSteer
-    min_raw_steer_mod, max_raw_steer_mod = param_modification_limits["rawSteer"]
-    new_raw_steer_multi = random.uniform(min_raw_steer_mod, max_raw_steer_mod)
+    current_speed = None
 
     for line in lines:
         stripped_line = line.strip()
         # Adjust speed
         if stripped_line.startswith("- speed:"):
             speed_str = stripped_line.split(":")[1].strip()
-            speed = float(speed_str)
-            new_speed = speed * (1 + new_speed_multi)
+            current_speed = float(speed_str)
+            new_speed_multi = random.uniform(*param_modification_limits["speed"])
+            new_speed = current_speed * (1 + new_speed_multi)
             if "speed" in param_limits:
                 min_limit, max_limit = param_limits["speed"]
-                if new_speed < min_limit:
-                    new_speed = min_limit
-                elif new_speed > max_limit:
-                    new_speed = max_limit
+                new_speed = max(min(new_speed, max_limit), min_limit)
 
             modified_lines.append(f"  - speed: {new_speed:.2f}")
         # Adjust rawThrottle
         elif stripped_line.startswith("rawThrottle:"):
-            raw_throttle_str = line.split(":")[1].strip()
+            raw_throttle_str = stripped_line.split(":")[1].strip()
             raw_throttle = float(raw_throttle_str)
+            new_raw_throttle_multi = random.uniform(*param_modification_limits["rawThrottle"])
             new_raw_throttle = raw_throttle * (1 + new_raw_throttle_multi)
             if "rawThrottle" in param_limits:
                 min_limit, max_limit = param_limits["rawThrottle"]
-                if new_raw_throttle < min_limit:
-                    new_raw_throttle = min_limit
-                elif new_raw_throttle > max_limit:
-                    new_raw_throttle = max_limit
+                new_raw_throttle = max(min(new_raw_throttle, max_limit), min_limit)
 
             modified_lines.append(f"    rawThrottle: {new_raw_throttle:.2f}")
         # Adjust throttle
         elif stripped_line.startswith("throttle:"):
             throttle_str = stripped_line.split(":")[1].strip()
             throttle = float(throttle_str)
+            new_throttle_multi = random.uniform(*param_modification_limits["throttle"])
+            new_throttle = throttle * (1 + new_throttle_multi)
             if "throttle" in param_limits:
                 min_limit, max_limit = param_limits["throttle"]
-                new_throttle = throttle * (1 + new_throttle_multi)
-                if new_throttle < min_limit:
-                    new_throttle = min_limit
-                elif new_throttle > max_limit:
-                    new_throttle = max_limit
+                new_throttle = max(min(new_throttle, max_limit), min_limit)
 
             modified_lines.append(f"    throttle: {new_throttle:.2f}")
         # Adjust brakePressure
         elif stripped_line.startswith("brakePressure:"):
             brake_pressure_str = stripped_line.split(":")[1].strip()
             brake_pressure = float(brake_pressure_str)
+            new_brake_pressure_multi = random.uniform(*param_modification_limits["brakePressure"])
+            new_brake_pressure = brake_pressure * (1 + new_brake_pressure_multi)
             if "brakePressure" in param_limits:
                 min_limit, max_limit = param_limits["brakePressure"]
-                new_brake_pressure = brake_pressure * \
-                    (1 + new_brake_pressure_multi)
-                if new_brake_pressure < min_limit:
-                    new_brake_pressure = min_limit
-                elif new_brake_pressure > max_limit:
-                    new_brake_pressure = max_limit
+                new_brake_pressure = max(min(new_brake_pressure, max_limit), min_limit)
 
-            modified_lines.append(
-                f"    brakePressure: {new_brake_pressure:.2f}")
-        # Adjust steeringAngle
+            modified_lines.append(f"    brakePressure: {new_brake_pressure:.2f}")
+        # Adjust steeringAngle based on speed
         elif stripped_line.startswith("steeringAngle:"):
             steering_angle_str = stripped_line.split(":")[1].strip()
             steering_angle = float(steering_angle_str)
+            new_steering_angle_multi = get_dynamic_steering_mod(current_speed, "steeringAngle")
+            new_steering_angle = steering_angle * (1 + new_steering_angle_multi)
             if "steeringAngle" in param_limits:
                 min_limit, max_limit = param_limits["steeringAngle"]
-                new_steering_angle = steering_angle * \
-                    (1 + new_steering_angle_multi)
-                if new_steering_angle < min_limit:
-                    new_steering_angle = min_limit
-                elif new_steering_angle > max_limit:
-                    new_steering_angle = max_limit
+                new_steering_angle = max(min(new_steering_angle, max_limit), min_limit)
 
-            modified_lines.append(
-                f"    steeringAngle: {new_steering_angle:.2f}")
-        # Adjust rawSteer
+            modified_lines.append(f"    steeringAngle: {new_steering_angle:.2f}")
+        # Adjust rawSteer based on speed
         elif stripped_line.startswith("rawSteer:"):
             raw_steer_str = stripped_line.split(":")[1].strip()
             raw_steer = float(raw_steer_str)
+            new_raw_steer_multi = get_dynamic_steering_mod(current_speed, "rawSteer")
+            new_raw_steer = raw_steer * (1 + new_raw_steer_multi)
             if "rawSteer" in param_limits:
                 min_limit, max_limit = param_limits["rawSteer"]
-                new_raw_steer = raw_steer * (1 + new_raw_steer_multi)
-                if new_raw_steer < min_limit:
-                    new_raw_steer = min_limit
-                elif new_raw_steer > max_limit:
-                    new_raw_steer = max_limit
+                new_raw_steer = max(min(new_raw_steer, max_limit), min_limit)
 
             modified_lines.append(f"    rawSteer: {new_raw_steer:.2f}")
         else:
             modified_lines.append(line)
 
     return modified_lines
+
 
 # TO WRITE CSV FILES
 
