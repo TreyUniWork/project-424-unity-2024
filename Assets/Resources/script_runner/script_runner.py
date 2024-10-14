@@ -212,28 +212,31 @@ def simulate_child(child_index, child_content, output_folder, generation):
 
 # MUTATION LOGIC
 def crossover_and_mutate(parent1_content, parent2_content):
-    # Example: Extract parameters from the content (you may need to adjust this)
+    # Extract parameters from both parent contents
     parent1_params = extract_params(parent1_content)
     parent2_params = extract_params(parent2_content)
 
-    # Simple crossover logic (mix parameters)
     child_params = {}
     for param in param_limits.keys():
-        if random.random() < 0.6:  # 60% chance to take from parent 1 or parent 2
-            child_params[param] = parent1_params[param]
+        if param in ['steeringAngle', 'rawSteer']:
+            # Weighted crossover for steering parameters (bias toward parent1)
+            weight = 0.7  # 70% weight for parent1
+            child_params[param] = (parent1_params[param] * weight) + (parent2_params[param] * (1 - weight))
         else:
-            child_params[param] = parent2_params[param]
+            # Standard 60% chance to take from parent1, 40% from parent2
+            if random.random() < 0.6:
+                child_params[param] = parent1_params[param]
+            else:
+                child_params[param] = parent2_params[param]
 
-    # Mutation
-    for param in param_limits.keys():
-        if random.random() < 0.05:  # 5% chance to mutate
-            child_params[param] += random.uniform(
-                param_modification_limits[param][0], param_modification_limits[param][1])
-            # Ensure it stays within limits
-            child_params[param] = max(param_limits[param][0], min(
-                param_limits[param][1], child_params[param]))
+        # Mutation: 5% chance to mutate each parameter
+        if random.random() < 0.05:
+            child_params[param] += random.uniform(param_modification_limits[param][0], param_modification_limits[param][1])
+            # Ensure it stays within parameter limits
+            child_params[param] = max(param_limits[param][0], min(param_limits[param][1], child_params[param]))
 
     return child_params
+
 
 # TO EXTRACT THE PARAMETERS
 
