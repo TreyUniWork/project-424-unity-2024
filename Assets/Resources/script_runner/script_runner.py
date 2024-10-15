@@ -96,12 +96,21 @@ def select_best_sectors_steering(sector_times):
     return best_sectors  # [(best_child_for_sector_1, time), (best_child_for_sector_2, time), ...]
 
 def create_hybrid_child(best_sectors, best_lap_child, best_parents_content):
+    # Ensure the best_lap_child content is valid
+    if best_parents_content.get(best_lap_child) is None:
+        print(f"Error: Content for best_lap_child '{best_lap_child}' is None. Skipping child generation.")
+        return None
+
     # Extract params from the best lap child (for non-steering parameters)
     best_lap_params = extract_params(best_parents_content[best_lap_child])
     new_child_params = best_lap_params.copy()
 
     # Override steeringAngle and rawSteer based on the best sectors
     for i, (best_child, _) in enumerate(best_sectors):
+        if best_parents_content.get(best_child) is None:
+            print(f"Error: Content for sector-best child '{best_child}' is None. Using default steering params.")
+            continue
+        
         best_sector_content = best_parents_content[best_child]
         best_sector_params = extract_params(best_sector_content)
 
@@ -110,6 +119,7 @@ def create_hybrid_child(best_sectors, best_lap_child, best_parents_content):
         new_child_params["rawSteer"] = best_sector_params["rawSteer"]
 
     return convert_params_to_content(new_child_params)
+
 
 
 
@@ -332,6 +342,7 @@ def run_genetic_algorithm():
             with open(output_file_path, "w") as file:
                 file.write("\n".join(modified_content))
 
+        # Wait for CSV files containing lap and sector times
         watch_for_csv(script_location)
         csv_files = [os.path.join(script_location, file) for file in os.listdir(script_location) if file.endswith(".csv")]
 
@@ -356,7 +367,18 @@ def run_genetic_algorithm():
             next_generation = []
             for _ in range(num_children):
                 new_child_content = create_hybrid_child(best_sectors, best_lap_child, best_parents_content)
-                next_generation.append(new_child_content)
+                if new_child_content:
+                    next_generation.append(new_child_content)
+
+            # Write new children to files
+            for child_index, child_content in enumerate(next_generation):
+                output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
+                output_file_path = os.path.join(output_folder, output_file_name)
+                with open(output_file_path, "w") as file:
+                    file.write(child_content)
+                print(f"Created new child file: {output_file_path}")
+
+
 
 
 
