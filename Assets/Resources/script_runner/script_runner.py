@@ -28,8 +28,8 @@ param_modification_limits = {
     "rawThrottle": (-0.05, 0.05),
     "throttle": (-0.05, 0.05),
     "brakePressure": (-0.05, 0.05),
-    "steeringAngle": (-0.05, 0.05),
-    "rawSteer": (-0.05, 0.05),
+    "steeringAngle": (-0.1, 0.1),
+    "rawSteer": (-0.1, 0.1),
 }
 
 
