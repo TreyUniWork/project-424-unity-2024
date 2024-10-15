@@ -28,8 +28,8 @@ param_modification_limits = {
     "rawThrottle": (-0.05, 0.05),
     "throttle": (-0.05, 0.05),
     "brakePressure": (-0.05, 0.05),
-    "steeringAngle": (-0.05, 0.05),
-    "rawSteer": (-0.05, 0.05),
+    "steeringAngle": (-0.1, 0.1),
+    "rawSteer": (-0.1, 0.1),
 }
 
 
@@ -62,16 +62,55 @@ def load_base_input_file(file_path):
         return None
 
 
-def read_csv_laptimes(file_path):
+def read_csv_laptimes_with_sectors(file_path):
     lap_times = {}
+    sector_times = {}
+
     with open(file_path, "r") as csv_file:
         reader = csv.reader(csv_file)
-        next(reader)  # Skip header row
+        headers = next(reader)  # Skip header row
+        
         for row in reader:
-            filename, laptime_str = row[0], row[1]
-            laptime = float(laptime_str)
-            lap_times[filename] = laptime
-    return lap_times
+            filename = row[0]
+            lap_time = float(row[1])
+            sectors = [float(row[i + 2]) for i in range(len(row) - 2)]  # Assuming sectors start from column 3
+            lap_times[filename] = lap_time
+            sector_times[filename] = sectors
+
+    return lap_times, sector_times
+
+def select_best_sectors_steering(sector_times):
+    best_sectors = []
+    num_sectors = len(next(iter(sector_times.values())))  # Get number of sectors from the first entry
+
+    # Initialize best sector times for steering-related parameters
+    for i in range(num_sectors):
+        best_sectors.append((None, float('inf')))  # (child, best time)
+
+    # Find the best child for each sector based on sector time
+    for child, sectors in sector_times.items():
+        for i, sector_time in enumerate(sectors):
+            if sector_time < best_sectors[i][1]:  # Compare sector times
+                best_sectors[i] = (child, sector_time)
+
+    return best_sectors  # [(best_child_for_sector_1, time), (best_child_for_sector_2, time), ...]
+
+def create_hybrid_child(best_sectors, best_lap_child, best_parents_content):
+    # Extract params from the best lap child (for non-steering parameters)
+    best_lap_params = extract_params(best_parents_content[best_lap_child])
+    new_child_params = best_lap_params.copy()
+
+    # Override steeringAngle and rawSteer based on the best sectors
+    for i, (best_child, _) in enumerate(best_sectors):
+        best_sector_content = best_parents_content[best_child]
+        best_sector_params = extract_params(best_sector_content)
+
+        # Override steering-related parameters from the best sector
+        new_child_params["steeringAngle"] = best_sector_params["steeringAngle"]
+        new_child_params["rawSteer"] = best_sector_params["rawSteer"]
+
+    return convert_params_to_content(new_child_params)
+
 
 
 def watch_for_csv(directory):
@@ -273,103 +312,52 @@ def convert_params_to_content(params):
 
 # Define a function to run the genetic algorithm
 def run_genetic_algorithm():
-    # Get the input file path from an entry field
     base_input_file = input_file_entry.get()
-
-    # Load the content of the input file
     base_input_content = load_base_input_file(base_input_file)
-
-    # Split the input content into lines
-    lines = base_input_content.split("\n")
-
-    # Get the directory where the script is located
     script_location = os.path.dirname(os.path.abspath(__file__))
 
-    # Iterate through each child in the current generation
     for generation in range(num_generations):
         print(f"Generation {generation + 1}:")
-
-        output_folder = os.path.join(
-            script_location, "..", "GeneticAssets", f"GEN{generation + 1}")
+        output_folder = os.path.join(script_location, "..", "GeneticAssets", f"GEN{generation + 1}")
         os.makedirs(output_folder, exist_ok=True)
-        print(f"Created output folder: {output_folder}")
 
         current_generation = [base_input_content] * num_children
 
-        # Iterate through each child in the current generation
         for child_index, child_content in enumerate(current_generation):
-            print(f"Child {child_index+1}")
             lines = child_content.split("\n")
-            modified_content = []
+            modified_content = modify_params(lines) if child_index > 0 else lines
 
-            # Skip modification for the first child (child_index == 0)
-            if child_index == 0:
-                modified_content = lines
-            else:
-                # Modify parameters within the child's content
-                modified_content = modify_params(lines)
-                print(f"Modified child {child_index + 1} content")
-
-            # THIS IS WHAT IS CREATING THE ASSET FILES
-            # Generate an output file name for each child and write the modified content to a file
             output_file_name = f"gen{generation + 1}asset{child_index + 1}.asset"
             output_file_path = os.path.join(output_folder, output_file_name)
-            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
             with open(output_file_path, "w") as file:
                 file.write("\n".join(modified_content))
-            print(f"Created output file: {output_file_path}")
 
-        # Call a function to watch for CSV files
         watch_for_csv(script_location)
+        csv_files = [os.path.join(script_location, file) for file in os.listdir(script_location) if file.endswith(".csv")]
 
-        # Scan the script's directory for CSV files and select the latest one
-        csv_files = [
-            os.path.join(script_location, file)
-            for file in os.listdir(script_location)
-            if file.endswith(".csv")
-        ]
         if not csv_files:
             print("No CSV files found!")
             return
+
         latest_csv = max(csv_files, key=os.path.getctime)
-        print(
-            f"Selected latest CSV file: {latest_csv} (Shouldn't take long so close if it's frozen)"
-        )
+        lap_times, sector_times = read_csv_laptimes_with_sectors(latest_csv)
 
-        # Read lap times from the selected CSV file
-        lap_times = {}
-        while not lap_times or len(lap_times) < 5:
-            lap_times = read_csv_laptimes(latest_csv)
-
-        print(f"Read lap times from CSV file")
-
-        # Get the laptime of the best parent and update the base file for the next generation
         if lap_times:
-            best_parent_filename = min(lap_times, key=lap_times.get)
-            base_input_content = load_base_input_file(best_parent_filename)
-            print(f"Lap Times: {lap_times}")
-            print(f"Selected best parent file: {best_parent_filename}\n")
-        else:
-            print(f"Error reading laptimes: {lap_times}")
+            # Select the best child based on total lap time (for non-steering parameters)
+            best_lap_child = min(lap_times, key=lap_times.get)
 
-        # Identify the two best parents from the previous generation based on lap times
-        best_parents_filenames = sorted(lap_times, key=lap_times.get)[:2]
-        best_parents_content = [
-            load_base_input_file(filename) for filename in best_parents_filenames
-        ]
+            # Select the best child for each sector based on sector times (for steering-related parameters)
+            best_sectors = select_best_sectors_steering(sector_times)
 
-        # # Print the names of the best parents for the next generation
-        print(
-            f"Best parents for next generation are: {best_parents_filenames}")
+            # Load content of best parents
+            best_parents_content = {child: load_base_input_file(f"gen{generation + 1}asset{child}.asset") for child in lap_times.keys()}
 
-        # # Create a new next generation by performing crossover and mutation on the best parents' content
-        next_generation = []
-        for _ in range(num_children):
-            child_params = crossover_and_mutate(
-                best_parents_content[0], best_parents_content[1]
-            )
-            child_content = convert_params_to_content(child_params)
-            next_generation.append(child_content)
+            # Create a new child based on best lap time for non-steering and best sectors for steering
+            next_generation = []
+            for _ in range(num_children):
+                new_child_content = create_hybrid_child(best_sectors, best_lap_child, best_parents_content)
+                next_generation.append(new_child_content)
+
 
 
 # GUI setup
