@@ -9,7 +9,7 @@ from watchdog.events import FileSystemEventHandler
 
 # Define the genetic algorithm parameters
 num_children = 5
-num_generations = 30
+num_generations = 10
 param_limits = {
     "speed": (0, 100),  # float
     "rawThrottle": (0, 10000),  # int
