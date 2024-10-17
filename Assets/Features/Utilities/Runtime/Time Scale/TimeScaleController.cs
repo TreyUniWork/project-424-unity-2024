@@ -5,7 +5,7 @@ namespace Perrinn424.Utilities
     public class TimeScaleController : MonoBehaviour
     {
         // AUT - Eirik
-        public float defaultRealtimeValue = 50.00f;
+        public float defaultRealtimeValue = 1.0f;
 
         [SerializeField]
         private float[] timeScales;
